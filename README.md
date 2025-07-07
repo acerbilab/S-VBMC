@@ -61,7 +61,7 @@ print(f"Stacked ELBO: {vp_stacked.elbo['estimated']}")
 
 -----
 
-## ⚠️ Important: How to Use the Final Posterior
+## ⚠️ Important: how to use the final posterior
 
 Users must use samples from the stacked posterior for any application and should **not** interpret its individual components (means and covariances).
 
