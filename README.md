@@ -1,38 +1,83 @@
 # Stacking Variational Bayesian Monte Carlo (S-VBMC)
 
-Stacking Variational Bayesian Monte Carlo (S-VBMC) builds on Variational Bayesian Monte Carlo (VBMC, find the python implementation [here](https://github.com/acerbilab/pyvbmc)), a sample-efficient Bayesian inference approach that performs variational inference on a Gaussian Process (GP) surrogate of the model to produce a variational posterior in the form of a mixture of Gaussians. S-VBMC consists in "stacking" a set of these variational posteriors and re-optimising the stacked ELBO w.r.t. the weights of all Gaussian components, leaving the means and covariance matrices unchanged. This is done as a simple and inexpensive post-processing step, and the model does not need to be re-evaluated at any point.
+### What is it?
+Stacking Variational Bayesian Monte Carlo (S-VBMC) is a fast post-processing step for [Variational Bayesian Monte Carlo (VBMC)](https://github.com/acerbilab/pyvbmc). VBMC produces a variational posterior in the form of a Gaussian mixture. S-VBMC improves upon this by combining ("stacking") the Gaussian mixture components from several independent VBMC runs into a single, larger mixture. It then re-optimizes the weights of this combined mixture to maximize the combined Evidence Lower BOund (ELBO, a lower bound on log [model evidence](https://en.wikipedia.org/wiki/Marginal_likelihood)). 
 
-This repository is organised as follows:
-- `svbmc.py` contains the `SVBMC` class, which one should use to run our main algorithm.
-- `visualisation.py` contains the `overlay_corner_plot` function, used to overlay corner plots given one or more sets of samples.
-- `samples` is a folder containing the "ground truth" samples from our two synthetic targets (`gmm_D_2_GT.csv` and `ring_D_2_GT.csv`) obtained via direct sampling or extensive Markov Chain Monte Carlo (MCMC) as appropriate.
-- `vbmc_runs` is a folder containing the VBMC outputs from our multimodal target (in the `GMM` sub-folder) and from our ring-shaped target (in the `Ring` folder). These are `pickle` files output by PyVBMC (10 per target), the aforementioned python implementation of VBMC.
-- `examples.ipynb` is a notebook showing how to use the `SVBMC` class with our two synthetic examples (multimodal target and ring target).
-- `requirements.txt` contains all the dependencies necessary to run the algorithm.
+A key advantage of S-VBMC is its efficiency: **the original model is never re-evaluated**, making it an inexpensive way to boost inference performance.
 
 
-### How to use S-VBMC
+### Repository layout
 
-After creating/activating a virtual environent, one should run
-```
+This repository is organized as follows:
+
+  - `svbmc.py` contains the `SVBMC` class, which one should use to run our main algorithm.
+  - `visual.py` contains the `overlay_corner_plot` function, used to overlay corner plots given one or more sets of samples.
+  - `samples` is a folder containing the "ground truth" samples from our two synthetic targets (`gmm_D_2_GT.csv` and `ring_D_2_GT.csv`) obtained via direct sampling or extensive Markov Chain Monte Carlo (MCMC) as appropriate.
+  - `vbmc_runs` is a folder containing the VBMC outputs from our multimodal target (in the `GMM` sub-folder) and from our ring-shaped target (in the `Ring` folder). These are `.pkl` files output by PyVBMC (10 per target), the python implementation of VBMC.
+  - `examples.ipynb` is a notebook showing how to use the `SVBMC` class with our two synthetic examples (multimodal target and ring target).
+  - `requirements.txt` contains all the dependencies necessary to run the algorithm.
+
+-----
+
+## How to use S-VBMC
+
+### 1\. Installation
+
+After creating and activating a virtual environment, install all required dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
-to install all required dependencies.
 
-One should already have run VBMC multiple times (see illustrative example [here](https://github.com/acerbilab/pyvbmc/blob/main/examples/pyvbmc_example_1_basic_usage.ipynb)) on the same problem before using S-VBMC, and save the resulting `VariationalPosterior` obects in `.pkl` files.
+### 2\. Running S-VBMC
 
-These files should be loaded and put in a list `vp_list`, which is the minimum necessary input one needs to use the `SVBMC` class. To optimise the stacked ELBO, one can simply initialise the object and run the optimisation like so:
+You should have already run VBMC multiple times on the same problem and saved the resulting `VariationalPosterior` objects as `.pkl` files. Refer to [these notebooks](https://github.com/acerbilab/pyvbmc/tree/main/examples) for VBMC usage examples.
+
+First, load these objects into a single list. For example, if you have your files in a folder named `vbmc_runs/`:
+
+```python
+import pickle
+import glob
+
+vp_files = glob.glob("vbmc_runs/*.pkl")
+vp_list = []
+for file in vp_files:
+    with open(file, "rb") as f:
+        vp_list.append(pickle.load(f))
 ```
+
+Next, initialize the `SVBMC` object with this list and run the optimization.
+
+```python
+from svbmc import SVBMC
+
+# Initialize the stacked object and optimize the weights
 vp_stacked = SVBMC(vp_list=vp_list)
 vp_stacked.optimize()
+
+# The stacked object now contains the optimized weights and ELBO estimates
+print(f"Stacked ELBO: {vp_stacked.elbo['estimated']}")
 ```
 
-After this, the `SVBMC` object `vp_stacked` will contained the new optimised mixture weights (`vp_stacked.w`, a `numpy` array) and the stacked ELBO (`vp_stacked.elbo`, a dictionary containing both uncorrected and debiased estimates, see paper for details).
+-----
 
-__IMPORTANT__: Users should now use the sufficient statistics (weights, means and covariance matrices) of the stacked posterior for any application. This is because VBMC (if ran with default settings) applies different parameter transformations in each inference run. The means and covariance matrices corresponding to different VBMC posteriors therefore live in different parameter spaces, making the final mixture (i.e. the stacked posterior) tricky to interpret. Therefore, <u>one should always use samples from the stacked posterior</u>. These are available with the `sample` method within the `SVBMC` class.
+## ⚠️ Important: How to Use the Final Posterior
+
+Users must use samples from the stacked posterior for any application and should **not** interpret its individual components (means and covariances).
+
+This is because each VBMC run may use different internal parameter transformations. Consequently, the means and covariance matrices from different VBMC posteriors exist in **incompatible parameter spaces**. Combining them creates a mixture whose individual Gaussian components are not directly meaningful.
+
+**Always use samples from the final stacked posterior**, which are correctly transformed back into the original parameter space. These are available via the `.sample()` method:
+
+```python
+# Draw 10,000 samples from the final, stacked posterior
+samples = vp_stacked.sample(n_samples=10000)
+```
+
+For a detailed walkthrough, see the `examples.ipynb` notebook.
+
+**Note**: For compatibility with PyVBMC, this implementation of S-VBMC stores results in `numpy` arrays. However, it uses `pytorch` under the hood to run the stacked ELBO optimization.
 
 
-The `examples.ipynb` notebook illustrates the use of the `SVBMC` class in more detail. 
 
 
-__Note__: For compatibility with PyVBMC, this implementation of S-VBMC stores results in `numpy` arrays. However, it uses `pytorch` under the hood to run the stacked ELBO optimisation.

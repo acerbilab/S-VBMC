@@ -15,7 +15,7 @@ class SVBMC:
     Carlo (VBMC, and specifically its python implementation, PyVBMC) runs. It does so by optimising 
     the 'stacked ELBO' w.r.t. only the weights of each Gaussian component of the 'stacked posterior'.
 
-    Initialise a ``SVBMC`` object to set up the inference problem, then run
+    Initialize a ``SVBMC`` object to set up the inference problem, then run
     ``optimize()``. 
 
     Parameters:
@@ -38,14 +38,14 @@ class SVBMC:
         self.M = len(self.vp_list)
         # Weights of the components of the individual VPs, concatenated
         self.w = np.concatenate([np.reshape(vp.w, (1, vp.mu.shape[1])) for vp in self.vp_list], axis = 1)
-        self.w = self.w/np.sum(self.w) # Normalise
+        self.w = self.w/np.sum(self.w) # Normalize
         # Get mean across GPs for the expected log-joint contributions
         self.I = np.concatenate([np.mean(vp.stats['I_sk'], axis=0, keepdims=True) for vp in self.vp_list], axis = 1)      
         # Store ELBO of individual VPs
         self.individual_elbos = [vp.stats['elbo'] for vp in self.vp_list]
-        # Initialise I_corrected as empty list
+        # Initialize I_corrected as empty list
         self.I_corrected = []
-        # Initialise E_corrected as zeros array
+        # Initialize E_corrected as zeros array
         self.E_corrected = np.zeros((self.M))
         
     
@@ -96,9 +96,9 @@ class SVBMC:
         w = w / w.sum()  # ensure normalized
         log_w = torch.log(w + 1e-40) # take the log
 
-        # Initialise empty list for the K_total subcomponents
+        # Initialize empty list for the K_total subcomponents
         subcomps = [] 
-        # Initialise empty vector for Jacobian corrections. 
+        # Initialize empty vector for Jacobian corrections. 
         # This is important for correcting the expected log-joint when estimating the ELBO.
         J_corrections = np.zeros((K_total))
 
@@ -118,8 +118,8 @@ class SVBMC:
         # We can do this as w does not come into play yet, and we need to differentiate 
         # w.r.t. w only.
         S = K_total * n_samples # total number of samples
-        X_orig = np.zeros((S, self.D)) # Initialise array of original space samples
-        comp_index = np.zeros((S)) # Initialise array to track from which component each sample is taken
+        X_orig = np.zeros((S, self.D)) # Initialize array of original space samples
+        comp_index = np.zeros((S)) # Initialize array to track from which component each sample is taken
 
         row_offset = 0
         for mk, sc in enumerate(subcomps):
@@ -142,7 +142,7 @@ class SVBMC:
 
         #### Step 2- Evaluate log q_{mk}(x) for all x in X_orig and for all q_{mk} in subcomps
 
-        # Initialise matrix to store log q_{mk}(x) for all x and q_{mk}
+        # Initialize matrix to store log q_{mk}(x) for all x and q_{mk}
         logq_matrix = np.zeros((S, K_total)) 
 
         for mk, sc in enumerate(subcomps):
@@ -223,13 +223,13 @@ class SVBMC:
             # if it's a numpy array, convert after normalising
             if isinstance(w, np.ndarray):
                 w = torch.tensor(w/np.sum(w))
-            # if it's a list, try converting to np array, if not use self.w. Always normalise to be safe
+            # if it's a list, try converting to np array, if not use self.w. Always normalize to be safe
             elif isinstance(w, list):
                 try:
                     w = torch.tensor(np.array(w)/np.sum(np.array(w)))
                 except:
                     w = torch.tensor(self.w/np.sum(self.w))
-            # if it's anything else, use normalised self.w
+            # if it's anything else, use normalized self.w
             else:
                 w = torch.tensor(self.w/np.sum(self.w)) 
 
@@ -265,9 +265,9 @@ class SVBMC:
             version: str = "all-weights"
             ):
         """
-        Maximises ``stacked_ELBO(w, n_samples)`` by parameterizing w via softmax of unconstrained logits.
-        Can optimise w.r.t. w ("all-weights") or the VBMC posterior weights omega_m, ("posterior-only"). 
-        It can also perform naive stacking (simply renormalise the weights).
+        Maximizes ``stacked_ELBO(w, n_samples)`` by parameterizing w via softmax of unconstrained logits.
+        Can optimize w.r.t. w ("all-weights") or the VBMC posterior weights omega_m, ("posterior-only"). 
+        It can also perform naive stacking (simply renormalizing the weights).
 
         Parameters:
         -----------
@@ -279,47 +279,47 @@ class SVBMC:
         max_steps: int 
             maximum number of gradient ascent steps
         version: string
-            the type of optimisation to be performed. It can take the following values:
-                - "all-weights": default, optimises w.r.t. the weights of all individual 
+            the type of optimization to be performed. It can take the following values:
+                - "all-weights": default, optimizes w.r.t. the weights of all individual 
                                 components;
-                - "posterior-only": optimises w.r.t. omega, i.e. the weights of whole VBMC
+                - "posterior-only": optimizes w.r.t. omega, i.e. the weights of whole VBMC
                                 posteriors;
-                - "ns": naive stacking, simply re-normalises the weights.
+                - "ns": naive stacking, simply re-normalizes the weights.
 
         Returns:
         --------
         w_final: torch.Tensor 
-            The optimised weights of the stacked posterior.
+            The optimized weights of the stacked posterior.
         elbo_best: torch.Tensor
-            The maximised ELBO. 
+            The maximized ELBO. 
         entropy_best: torch.Tensor
-            The entropy of the optimised stacked posterior
+            The entropy of the optimized stacked posterior
         """
 
         # Setup
         w_init = torch.tensor(self.w) # convert weights to torch.Tensor 
-        log_w = torch.log(w_init) # we optimise in log space
+        log_w = torch.log(w_init) # we optimize in log space
 
-        # Standard S-VBMC, optimise w.r.t. all weights w
+        # Standard S-VBMC, optimize w.r.t. all weights w
         if version == "all-weights":
             print("Optimising the stacked ELBO w.r.t. all weights")
-            # Prepare a broadcasted version of the individual ELBOs and log K[m] for weight initialisation
+            # Prepare a broadcasted version of the individual ELBOs and log K[m] for weight initialization
             broadcasted_elbos = np.concatenate([np.ones((self.K[m]))*self.individual_elbos[m] for m in range(self.M)], axis = 0)
             broadcasted_elbos = torch.tensor(broadcasted_elbos)
             broadcasted_logK = np.concatenate([np.ones((self.K[m]))*np.log(self.K[m]) for m in range(self.M)], axis = 0)
             broadcasted_logK = torch.tensor(broadcasted_logK)
             # Treat w_logits as the raw, unconstrained parameter to be optimized.
-            # Initialise the weights to promote the ones coming from better runs 
+            # Initialize the weights to promote the ones coming from better runs 
             w_logits_init = log_w + broadcasted_elbos - broadcasted_logK 
             w_logits_init = w_logits_init - torch.max(w_logits_init)
             w_logits = w_logits_init.detach().clone()
             w_logits.requires_grad_(True)
             # Set up an optimizer that will *only* update w_logits
             optimizer = optim.Adam([w_logits], lr=lr)
-            # Initialise w_best
+            # Initialize w_best
             w_best = copy.deepcopy(w_logits)
 
-        # Optimise w.r.t. omega, i.e. the weights of individual VBMC posteriors
+        # Optimize w.r.t. omega, i.e. the weights of individual VBMC posteriors
         elif version == "posterior-only":
             print("Optimising the stacked ELBO w.r.t. the weights of individual VBMC posteriors")
             # We treat omega_logits as the raw, unconstrained parameter to be optimized:
@@ -330,7 +330,7 @@ class SVBMC:
             omega_logits.requires_grad_(True)
             # Set up an optimizer that will *only* update omega_logits
             optimizer = optim.Adam([omega_logits], lr=lr)
-            # Initialise w_best
+            # Initialize w_best
             w_best = copy.deepcopy(torch.repeat_interleave(omega_logits.detach().clone(), repeats=torch.tensor(self.K), dim=0) + log_w)
 
         elif version == "ns":
@@ -340,7 +340,7 @@ class SVBMC:
             return w_final, elbo_best, entropy_best
 
         else:
-            raise AttributeError("S-VBMC version not recognised. Check the spelling!")
+            raise AttributeError("S-VBMC version not recognized. Check the spelling!")
 
         # We say S-VBMC has converged when the stacked ELBO does not improve after 5 steps.
         convergence_counter = 0
@@ -406,9 +406,9 @@ class SVBMC:
             version: str = "all-weights"
             ):
         """
-        Maximises stacked_ELBO(w, n_samples) and debiases the resulting stacked ELBO.
-        Can optimise w.r.t. w ("all-weights") or the VBMC posterior weights omega_m, ("posterior-only"). 
-        It can also perform naive stacking (simply renormalise the weights).
+        Maximizes stacked_ELBO(w, n_samples) and debiases the resulting stacked ELBO.
+        Can optimize w.r.t. w ("all-weights") or the VBMC posterior weights omega_m, ("posterior-only"). 
+        It can also perform naive stacking (simply renormalize the weights).
 
         Parameters:
         -----------
@@ -420,15 +420,15 @@ class SVBMC:
         max_steps: int 
             maximum number of gradient ascent steps
         version: string
-            the type of optimisation to be performed. It can take the follwoing values:
-                - "all-weights": default, optimises w.r.t. the weights of all individual 
+            the type of optimization to be performed. It can take the follwoing values:
+                - "all-weights": default, optimizes w.r.t. the weights of all individual 
                                 components;
-                - "posterior-only": optimises w.r.t. omega, i.e. the weights of whole VBMC
+                - "posterior-only": optimizes w.r.t. omega, i.e. the weights of whole VBMC
                                 posteriors;
-                - "ns": naive stacking, simply re-normalises the weights.
+                - "ns": naive stacking, simply re-normalizes the weights.
         """
 
-        # Optimise stacked ELBO 
+        # Optimize stacked ELBO 
         w, ELBO, H = self.maximize_ELBO(n_samples = n_samples, lr = lr, max_steps = max_steps, version = version)
 
         # Back to numpy
@@ -474,7 +474,7 @@ class SVBMC:
             vp_copy = copy.deepcopy(vp)
             # Get relative weight of the individual VBMC posterior (omega)
             omega = np.sum(self.w[:,idx:idx+self.K[m]])
-            # change the weights within the vp object to correspond to the optimised ones (and normalise)
+            # change the weights within the vp object to correspond to the optimized ones (and normalize)
             vp_copy.w = self.w[:,idx:idx+self.K[m]]/omega
             # Use the PyVBMC sampling function to sample from individual posteriors in the base space.
             # Sample proportionally to the relative weight of the individual VBMC posterior.
