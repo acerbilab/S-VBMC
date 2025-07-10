@@ -56,25 +56,25 @@ class GMM:
 
         # handy constants 
         self.K, self.D = self.mus.shape # Number of components and number of dimensions
-        self.inv_sigmas = np.linalg.inv(self.sigmas)          # [K, D, D]
-        _, self.logdets = np.linalg.slogdet(self.sigmas)      # [K]
+        self.inv_sigmas = np.linalg.inv(self.sigmas)          # [`K`, `D`, `D`]
+        _, self.logdets = np.linalg.slogdet(self.sigmas)      # [`K`]
         self.log_norm = -0.5 * (self.logdets + self.D * np.log(2 * np.pi))
 
 
     def log_pdf(self, x):
         """
-        Log-density of the unnormalised mixture at point x (shape (D,)).
+        Log-density of the unnormalized mixture at point `x` (shape (`D`,)).
         """
         x = np.asarray(x)
-        diff = self.mus - x                                    # [K, D]
+        diff = self.mus - x                                    # [`K`, `D`]
         quad = np.einsum('ki,kij,kj->k', diff, self.inv_sigmas, diff)
-        log_components = -0.5 * quad + self.log_norm           # [K]
+        log_components = -0.5 * quad + self.log_norm           # [`K`]
         return logsumexp(log_components)
 
 
     def sample(self, n=1):
         """
-        Draw `n` samples.  Returns an array of shape (n, D).
+        Draw `n` samples.  Returns an array of shape (`n`, `D`).
         """
         idx = np.random.randint(0, self.K, size=n)
         return np.array([
@@ -84,16 +84,16 @@ class GMM:
 
 class Ring:
     """
-    2-D ring distribution.
+    2-D ring distribution. Defaults as in paper
 
     Parameters
     ----------
     R: float              
         mean radius
     sigma: float
-        radial std-dev
-    center : (2,)-array, float  
-        ring centre (default (0,0))
+        radial standard deviation
+    center : np.ndarray, float  
+        ring center 
     """
 
     def __init__(self, 
@@ -113,15 +113,16 @@ class Ring:
         Returns an array of the same leading shape as x.
         """
         x = np.asarray(x)
-        d  = x - self.center        # vector(s) from centre
+        d  = x - self.center        # vector(s) from center
         r  = np.linalg.norm(d, axis=-1)
         return np.log(r) - 0.5 * ((r - self.R) / self.sigma)**2
 
 
     # Sampling                                                           
-    def sample(self, n=1):
+    def sample(self, n : int = 1):
         """
-        Draw `n` samples.  Returns an array of shape (n, D).
+        Draw `n` samples.  
+        Returns an array of shape (`n`, 2).
         """
         samples = np.empty((n, 2))
         i = 0

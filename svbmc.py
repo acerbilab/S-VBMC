@@ -12,8 +12,8 @@ class SVBMC:
     """
     Stacking Variational Bayesian Monte Carlo (S-VBMC) is a method specifically designed to 'stack' 
     variational posteriors (mixture of Gaussians) coming from different Variational Bayesian Monte 
-    Carlo (VBMC, and specifically its python implementation, PyVBMC) runs. It does so by optimising 
-    the 'stacked ELBO' w.r.t. only the weights of each Gaussian component of the 'stacked posterior'.
+    Carlo (VBMC) runs. It does so by optimizing the 'stacked ELBO' with respect to (w.r.t.) only 
+    the weights of each Gaussian component of the 'stacked posterior'.
 
     Initialize a ``SVBMC`` object to set up the inference problem, then run
     ``optimize()``. 
@@ -21,31 +21,31 @@ class SVBMC:
     Parameters:
     -----------
     vp_list : list
-        A list with the variational posterior (vp) objects output by PyVBMC 
+        A list of ``VariationalPosterior`` (vp) objects output by VBMC 
         (see https://github.com/acerbilab/pyvbmc/tree/main for details)
     """
 
 
     def __init__(self, vp_list):
 
-        # Store all the variational posterior (VP, output of PyVBMC) objects in one list
+        # Store all the variational posterior (`vp`, output of PyVBMC) objects in one list
         self.vp_list = vp_list
         # Dimensionality of inference problem
         self.D = vp_list[0].mu.shape[0]
-        # Number of components for each VP
+        # Number of components for each `vp`
         self.K = [vp.mu.shape[1] for vp in self.vp_list]
-        # Number of VP to stack
+        # Number of `vp`s to stack
         self.M = len(self.vp_list)
-        # Weights of the components of the individual VPs, concatenated
+        # Weights of the components of the individual `vp`s, concatenated
         self.w = np.concatenate([np.reshape(vp.w, (1, vp.mu.shape[1])) for vp in self.vp_list], axis = 1)
         self.w = self.w/np.sum(self.w) # Normalize
         # Get mean across GPs for the expected log-joint contributions
         self.I = np.concatenate([np.mean(vp.stats['I_sk'], axis=0, keepdims=True) for vp in self.vp_list], axis = 1)      
-        # Store ELBO of individual VPs
+        # Store ELBO of individual `vp`s
         self.individual_elbos = [vp.stats['elbo'] for vp in self.vp_list]
-        # Initialize I_corrected as empty list
+        # Initialize `I_corrected` as empty list
         self.I_corrected = []
-        # Initialize E_corrected as zeros array
+        # Initialize `E_corrected` as zeros array
         self.E_corrected = np.zeros((self.M))
         
     
@@ -54,7 +54,7 @@ class SVBMC:
             n_samples: int = 20
             ):
         """
-        Monte Carlo estimate of the mixture entropy for K_total components, 
+        Monte Carlo estimate of the mixture entropy for `K_total` components, 
         differentiable w.r.t. the mixture weights. 
         The individual VBMC posteriors exist in different "transformed" feature 
         spaces (because of variational whitening), so Jacobian corrections need 
@@ -67,7 +67,7 @@ class SVBMC:
         feature space (the individual vp objects have a built-in method for this);
         2- for each component of the stacked posterior, ALL samples are transformed into that 
         component's feature space, the corresponding Jacobian correction is computed and the log probability 
-        of all the (K_total*n_samples = S) samples FOR THAT SPECIFIC COMPONENT is taken and stored;
+        of all the (`K_total`*`n_samples` = `S`) samples FOR THAT SPECIFIC COMPONENT is taken and stored;
         3- the log probability of each sample FOR THE WHOLE POSTERIOR is calculated, and these are 
         then averaged to obtain an estimate of the stacked entropy.
 
@@ -87,7 +87,7 @@ class SVBMC:
             in the stacked_ELBO function.
         """
 
-        K_total = np.sum(self.K)  # same as sum(K)
+        K_total = np.sum(self.K)  
 
         dtype   = w.dtype          
         device  = w.device
@@ -96,7 +96,7 @@ class SVBMC:
         w = w / w.sum()  # ensure normalized
         log_w = torch.log(w + 1e-40) # take the log
 
-        # Initialize empty list for the K_total subcomponents
+        # Initialize empty list for the `K_total` subcomponents
         subcomps = [] 
         # Initialize empty vector for Jacobian corrections. 
         # This is important for correcting the expected log-joint when estimating the ELBO.
@@ -116,7 +116,7 @@ class SVBMC:
 
         # WE START WITH NUMPY because the transform functions built in PyVBMC use that.
         # We can do this as w does not come into play yet, and we need to differentiate 
-        # w.r.t. w only.
+        # w.r.t. `w` only.
         S = K_total * n_samples # total number of samples
         X_orig = np.zeros((S, self.D)) # Initialize array of original space samples
         comp_index = np.zeros((S)) # Initialize array to track from which component each sample is taken
@@ -124,51 +124,51 @@ class SVBMC:
         row_offset = 0
         for mk, sc in enumerate(subcomps):
 
-            # sample in the transformed space of the mk-th component (m-th VBMC posterior's feature space)
+            # sample in the transformed space of the `mk`-th component (`m`-th VBMC posterior's feature space)
             samples_sn = sp.stats.multivariate_normal.rvs(mean=np.zeros((self.D)), 
                                                           cov=np.eye(self.D), 
-                                                          size = n_samples)  # [n_samples, self.D]
-            x_mk_transform = samples_sn * sc['sigma'] + sc['mu'] # [n_samples, self.D]
+                                                          size = n_samples)  # [`n_samples`, `self.D`]
+            x_mk_transform = samples_sn * sc['sigma'] + sc['mu'] # [`n_samples`, `self.D`]
 
             # Store Jacobian correction 
             J_corrections[mk] = np.mean(sc['transform'].log_abs_det_jacobian(x_mk_transform)) 
 
             # Invert to original space
-            x_mk_orig = sc['transform'].inverse(x_mk_transform)  # [n_samples, self.D]
+            x_mk_orig = sc['transform'].inverse(x_mk_transform)  # [`n_samples`, `self.D`]
             X_orig[row_offset : row_offset + n_samples, :] = x_mk_orig
             comp_index[row_offset : row_offset + n_samples] = mk
             row_offset += n_samples
 
 
-        #### Step 2- Evaluate log q_{mk}(x) for all x in X_orig and for all q_{mk} in subcomps
+        #### Step 2- Evaluate log q_{`mk`}(`x`) for all `x` in `X_orig` and for all q_{`mk`} in `subcomps`
 
-        # Initialize matrix to store log q_{mk}(x) for all x and q_{mk}
+        # Initialize matrix to store log q_{`mk`}(`x`) for all x and q_{`mk`}
         logq_matrix = np.zeros((S, K_total)) 
 
         for mk, sc in enumerate(subcomps):
 
-            # forward transform for the mk-th component (to m-th VBMC posterior's feature space)
-            X_tranform_mk = sc['transform'](X_orig)  # [S, D]
-            jac_corr = sc['transform'].log_abs_det_jacobian(X_tranform_mk)  # [S]
+            # forward transform for the `mk`-th component (to `m`-th VBMC posterior's feature space)
+            X_transform_mk = sc['transform'](X_orig)  # [`S`, `D`]
+            jac_corr = sc['transform'].log_abs_det_jacobian(X_transform_mk)  # [`S`]
 
             # diagonal normal logpdf
-            logq_mk_tranform = np.sum(sp.stats.norm.logpdf(X_tranform_mk, sc['mu'], sc['sigma']), axis = 1)
+            logq_mk_transform = np.sum(sp.stats.norm.logpdf(X_transform_mk, sc['mu'], sc['sigma']), axis = 1)
             # Apply Jacobian correction
-            logq_mk_orig = logq_mk_tranform - jac_corr
+            logq_mk_orig = logq_mk_transform - jac_corr
 
             logq_matrix[:, mk] = logq_mk_orig
 
-        # WE SWITCH TO PYTORCH because w is going to come into play, and  the entropy 
-        # must be differentiable w.r.t. w
+        # WE SWITCH TO PYTORCH because `w` is going to come into play, and  the entropy 
+        # must be differentiable w.r.t. `w`
         logq_matrix = torch.tensor(logq_matrix, dtype=dtype, device=device)
-        # add log(w)
-        logq_matrix = logq_matrix + log_w # [S, K_total]
+        # add log(`w`)
+        logq_matrix = logq_matrix + log_w # [`S`, `K_total`]
 
 
         #### Step 3- Estimate the entropy
 
-        # Logsumexp over components to obtain log q(x) for all samples
-        logq_orig = torch.logsumexp(logq_matrix, dim=1)  # [S]
+        # Logsumexp over components to obtain log q(`x`) for all samples
+        logq_orig = torch.logsumexp(logq_matrix, dim=1)  # [`S`]
 
         # group by comp_index 
         sum_logq = torch.zeros(K_total, dtype=dtype, device=device)
@@ -176,13 +176,13 @@ class SVBMC:
 
         for mk in range(K_total):
             mask = (comp_index == mk)
-            count_mk = mask.sum() # K[m]
+            count_mk = mask.sum() # `K`[`m`]
             if count_mk > 0:
                 sum_logq[mk] = logq_orig[mask].sum()
                 count_logq[mk] = count_mk
 
-        # E_{q_{mk}}[log q(x)] for all mk
-        E_mk_logq = sum_logq / (count_logq + 1e-40) # [K_tot]
+        # E_{q_{`mk`}}[log q(`x`)] for all `mk`
+        E_mk_logq = sum_logq / (count_logq + 1e-40) # [`K_tot`]
 
         # Calculate the (approximate) entropy
         H = -w @ E_mk_logq 
@@ -196,10 +196,10 @@ class SVBMC:
             n_samples: int = 20
             ):
         """
-        Stacked ELBO estimation. The expected log-joint is calculated with as 
-        sum(w*I_{mk}), with I_{mk} being the expected log-joint under a single 
-        component (q_{mk}). The entropy is estimated via Monte Carlo.
-        As PyVBMC outputs I estimates in different transformed feature space, 
+        Stacked ELBO estimation. The expected log-joint is calculated as 
+        sum(`w`*`I_{mk}`), with `I_{mk}` being the expected log-joint under a single 
+        component (`q_{mk}`). The entropy is estimated via Monte Carlo.
+        As PyVBMC outputs `I` estimates in different transformed feature spaces, 
         Jacobian corrections must be applied.
 
         Parameters:
@@ -218,18 +218,18 @@ class SVBMC:
             The estimated entropy of the stacked posterior
         """
 
-        # Deal with all cases in which w is not a tensor
+        # Deal with all cases in which `w` is not a tensor
         if isinstance(w, torch.Tensor) == False:
-            # if it's a numpy array, convert after normalising
+            # if it's a numpy array, convert after normalizing
             if isinstance(w, np.ndarray):
                 w = torch.tensor(w/np.sum(w))
-            # if it's a list, try converting to np array, if not use self.w. Always normalize to be safe
+            # if it's a list, try converting to np array, if not use `self.w`. Always normalize to be safe
             elif isinstance(w, list):
                 try:
                     w = torch.tensor(np.array(w)/np.sum(np.array(w)))
                 except:
                     w = torch.tensor(self.w/np.sum(self.w))
-            # if it's anything else, use normalized self.w
+            # if it's anything else, use normalized `self.w`
             else:
                 w = torch.tensor(self.w/np.sum(self.w)) 
 
@@ -265,9 +265,9 @@ class SVBMC:
             version: str = "all-weights"
             ):
         """
-        Maximizes ``stacked_ELBO(w, n_samples)`` by parameterizing w via softmax of unconstrained logits.
-        Can optimize w.r.t. w ("all-weights") or the VBMC posterior weights omega_m, ("posterior-only"). 
-        It can also perform naive stacking (simply renormalizing the weights).
+        Maximizes ``stacked_ELBO(`w`, `n_samples`)`` by parameterizing `w` via softmax of unconstrained logits.
+        Can optimize w.r.t. `w` ("all-weights") or the VBMC posterior weights `omega`, ("posterior-only"). 
+        It can also perform naive stacking (simply re-normalizing the weights).
 
         Parameters:
         -----------
@@ -282,7 +282,7 @@ class SVBMC:
             the type of optimization to be performed. It can take the following values:
                 - "all-weights": default, optimizes w.r.t. the weights of all individual 
                                 components;
-                - "posterior-only": optimizes w.r.t. omega, i.e. the weights of whole VBMC
+                - "posterior-only": optimizes w.r.t. omega, i.e., the weights of whole VBMC
                                 posteriors;
                 - "ns": naive stacking, simply re-normalizes the weights.
 
@@ -300,37 +300,37 @@ class SVBMC:
         w_init = torch.tensor(self.w) # convert weights to torch.Tensor 
         log_w = torch.log(w_init) # we optimize in log space
 
-        # Standard S-VBMC, optimize w.r.t. all weights w
+        # Standard S-VBMC, optimize w.r.t. all weights `w`
         if version == "all-weights":
-            print("Optimising the stacked ELBO w.r.t. all weights")
-            # Prepare a broadcasted version of the individual ELBOs and log K[m] for weight initialization
+            print("Optimizing the stacked ELBO w.r.t. all weights")
+            # Prepare a broadcasted version of the individual ELBOs and log `K`[`m`] for weight initialization
             broadcasted_elbos = np.concatenate([np.ones((self.K[m]))*self.individual_elbos[m] for m in range(self.M)], axis = 0)
             broadcasted_elbos = torch.tensor(broadcasted_elbos)
             broadcasted_logK = np.concatenate([np.ones((self.K[m]))*np.log(self.K[m]) for m in range(self.M)], axis = 0)
             broadcasted_logK = torch.tensor(broadcasted_logK)
-            # Treat w_logits as the raw, unconstrained parameter to be optimized.
+            # Treat `w_logits` as the raw, unconstrained parameters to be optimized.
             # Initialize the weights to promote the ones coming from better runs 
             w_logits_init = log_w + broadcasted_elbos - broadcasted_logK 
             w_logits_init = w_logits_init - torch.max(w_logits_init)
             w_logits = w_logits_init.detach().clone()
             w_logits.requires_grad_(True)
-            # Set up an optimizer that will *only* update w_logits
+            # Set up an optimizer that will *only* update `w_logits`
             optimizer = optim.Adam([w_logits], lr=lr)
-            # Initialize w_best
+            # Initialize `w_best`
             w_best = copy.deepcopy(w_logits)
 
-        # Optimize w.r.t. omega, i.e. the weights of individual VBMC posteriors
+        # Optimize w.r.t. `omega`, i.e., the weights of individual VBMC posteriors
         elif version == "posterior-only":
-            print("Optimising the stacked ELBO w.r.t. the weights of individual VBMC posteriors")
-            # We treat omega_logits as the raw, unconstrained parameter to be optimized:
+            print("Optimizing the stacked ELBO w.r.t. the weights of individual VBMC posteriors")
+            # We treat `omega_logits` as the raw, unconstrained parameters to be optimized:
             omega_init = np.array([self.individual_elbos[m] for m in range(self.M)])
             omega_init = torch.tensor(omega_init)
             omega_init = omega_init - torch.max(omega_init) 
             omega_logits= omega_init.detach().clone()
             omega_logits.requires_grad_(True)
-            # Set up an optimizer that will *only* update omega_logits
+            # Set up an optimizer that will *only* update `omega_logits`
             optimizer = optim.Adam([omega_logits], lr=lr)
-            # Initialize w_best
+            # Initialize `w_best`
             w_best = copy.deepcopy(torch.repeat_interleave(omega_logits.detach().clone(), repeats=torch.tensor(self.K), dim=0) + log_w)
 
         elif version == "ns":
@@ -352,7 +352,7 @@ class SVBMC:
 
             optimizer.zero_grad()
 
-            # If optimising w.r.t. omega, get corresponding w_logits 
+            # If optimizing w.r.t. `omega`, get corresponding `w_logits` 
             if version == "posterior-only":
                 w_logits = torch.repeat_interleave(omega_logits, repeats=torch.tensor(self.K), dim=0) + log_w
 
@@ -406,9 +406,9 @@ class SVBMC:
             version: str = "all-weights"
             ):
         """
-        Maximizes stacked_ELBO(w, n_samples) and debiases the resulting stacked ELBO.
-        Can optimize w.r.t. w ("all-weights") or the VBMC posterior weights omega_m, ("posterior-only"). 
-        It can also perform naive stacking (simply renormalize the weights).
+        Maximizes ``stacked_ELBO(`w`, `n_samples`)`` and debiases the resulting stacked ELBO.
+        Can optimize w.r.t. `w` ("all-weights") or the VBMC posterior weights `omega`, ("posterior-only"). 
+        It can also perform naive stacking (simply re-normalize the weights).
 
         Parameters:
         -----------
@@ -420,10 +420,10 @@ class SVBMC:
         max_steps: int 
             maximum number of gradient ascent steps
         version: string
-            the type of optimization to be performed. It can take the follwoing values:
+            the type of optimization to be performed. It can take the following values:
                 - "all-weights": default, optimizes w.r.t. the weights of all individual 
                                 components;
-                - "posterior-only": optimizes w.r.t. omega, i.e. the weights of whole VBMC
+                - "posterior-only": optimizes w.r.t. `omega`, i.e., the weights of whole VBMC
                                 posteriors;
                 - "ns": naive stacking, simply re-normalizes the weights.
         """
@@ -451,7 +451,7 @@ class SVBMC:
     
     def sample(self, n_samples):
         """
-        Takes samples from the stacked posterior. It uses the PyVBMC `sample` method
+        Takes samples from the stacked posterior. It uses the PyVBMC ``sample`` method
         on the individual VBMC posterior (after re-adjusting the weights) to get all
         the samples from the original feature space.
 
@@ -468,11 +468,11 @@ class SVBMC:
 
         idx = 0
         Xs = []
-        # Loop over vp objects to use the PyVBMC sample function
+        # Loop over vp objects to use the PyVBMC's sample function
         for m, vp in enumerate(self.vp_list):
             # Copy to avoid altering the original
             vp_copy = copy.deepcopy(vp)
-            # Get relative weight of the individual VBMC posterior (omega)
+            # Get relative weight of the individual VBMC posterior (`omega`)
             omega = np.sum(self.w[:,idx:idx+self.K[m]])
             # change the weights within the vp object to correspond to the optimized ones (and normalize)
             vp_copy.w = self.w[:,idx:idx+self.K[m]]/omega
@@ -505,13 +505,13 @@ class SVBMC:
         n_samples : int
             How many samples to draw from the stacked posterior.
         color : str
-            Matplotlib-style colour to use for *all* 2-D contour lines and
+            Matplotlib-style color to use for *all* 2-D contour lines and
             1-D histograms (e.g. ``"C1"``, ``"tab:green"``, ``"#ff7f0e"``…).
         figsize : (float, float) or None
             Forwarded to ``plt.figure``.  If *None*, the default size from
             ``corner`` is used.
         smooth : float or None, optional
-            Gaussian kernel smoothing (in pixels) applied by ``corner``.
+            Gaussian kernel smoothing applied by ``corner``.
             Leave *None* for the default.
         **corner_kwargs
             Any additional keyword arguments are passed straight to

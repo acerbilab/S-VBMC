@@ -9,8 +9,8 @@ import corner
 
 def overlay_corner_plot(
     samples: List[np.ndarray],
-    label: Optional[List[str]] = None,
-    color: Optional[List[str]] = None,
+    labels: Optional[List[str]] = None,
+    colors: Optional[List[str]] = None,
     figsize: Optional[Tuple[float, float]] = None,
     smooth: Optional[float] = None,
     base: float = 2.5,
@@ -22,18 +22,18 @@ def overlay_corner_plot(
     Parameters:
     -----------
     samples : list[np.ndarray]
-        List of arrays, each of shape ``(N_i, D)`` where *D* is the
+        List of arrays, each of shape (`N_i`,`D`) where `D` is the
         dimensionality.
-    label : list[str], optional
+    labels : list[str], optional
         Legend labels corresponding to each item in `samples`.
         Defaults to "Run 1", "Run 2", ...
-    color : list[str], optional
-        Matplotlib colours for each sample set.  Defaults to the rcParams
-        colour cycle.
-    figsize : (float, float) or None, optional
-        Figure size in inches.  If *None*, uses ``≈ base·D`` on each side.
-    smooth : float or None, optional
-        Gaussian kernel smoothing (px) applied by *corner*.
+    colors : list[str], optional
+        Matplotlib colors for each sample set.  Defaults to the rcParams
+        color cycle.
+    figsize : (float, float) or `None`, optional
+        Figure size in inches.  If `None`, uses ``≈ `base`*`D` on each side.
+    smooth : float or `None`, optional
+        Gaussian kernel smoothing (px) applied by ``corner``.
     base : float, default 2.5
         Inches per variable when auto-sizing.
     **corner_kwargs
@@ -45,9 +45,7 @@ def overlay_corner_plot(
     matplotlib.figure.Figure
         The resulting corner-plot figure.
     """
-    # ──────────────────────────────────────────────────
-    # 1. sanity checks & dimensionality
-    # ──────────────────────────────────────────────────
+    # Sanity checks & dimensionality
     if not samples:
         raise ValueError("`samples` must contain at least one array.")
 
@@ -55,56 +53,46 @@ def overlay_corner_plot(
     if not all(s.shape[1] == D for s in samples):
         raise ValueError("All sample arrays must have the same dimensionality.")
 
-    # ──────────────────────────────────────────────────
-    # 2. global range so every marginal shares a scale
-    # ──────────────────────────────────────────────────
+    # Global range so every marginal shares a scale
     mins = np.min(np.vstack(samples), axis=0)
     maxs = np.max(np.vstack(samples), axis=0)
     global_range = [(lo, hi) for lo, hi in zip(mins, maxs)]
     corner_kwargs.setdefault("range", global_range)
 
-    # ──────────────────────────────────────────────────
-    # 3. colours & labels
-    # ──────────────────────────────────────────────────
-    if color is None:
-        color = plt.rcParams["axes.prop_cycle"].by_key()["color"]
-    color = list(itertools.islice(itertools.cycle(color), len(samples)))
+    # Colors & labels
+    if colors is None:
+        colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    colors = list(itertools.islice(itertools.cycle(colors), len(samples)))
 
-    if label is None:
-        label = [f"Run {i+1}" for i in range(len(samples))]
-    elif len(label) != len(samples):
-        raise ValueError("`label` length must match `samples` length.")
+    if labels is None:
+        labels = [f"Run {i+1}" for i in range(len(samples))]
+    elif len(labels) != len(samples):
+        raise ValueError("`labels` length must match `samples` length.")
 
-    # ──────────────────────────────────────────────────
-    # 4. figure size & axis labels
-    # ──────────────────────────────────────────────────
+    # Figure size & axis labels
     if figsize is None:
         figsize = (base * D, base * D)
 
     axis_labels = [fr"$x_{{{i+1}}}$" for i in range(D)]
 
-    # ──────────────────────────────────────────────────
-    # 5. build the plot
-    # ──────────────────────────────────────────────────
+    # Build the plot
     fig = plt.figure(figsize=figsize)
 
-    for idx, (samp_arr, col) in enumerate(zip(samples, color)):
-        weights = np.full(samp_arr.shape[0], 1.0 / samp_arr.shape[0])  # area-normalised
+    for idx, (samp_arr, col) in enumerate(zip(samples, colors)):
+        weights = np.full(samp_arr.shape[0], 1.0 / samp_arr.shape[0])  # area-normalized
         fig = corner.corner(
             samp_arr,
             labels=axis_labels,
             color=col,
             weights=weights,
             smooth=smooth,
-            show_titles=(idx == 0),             # show stats only once
+            show_titles=(idx == 0), # show stats only once
             fig=fig,
             **corner_kwargs,
         )
 
-    # ──────────────────────────────────────────────────
-    # 6. legend positioned to the right
-    # ──────────────────────────────────────────────────
-    patches = [mpatches.Patch(color=c, label=l) for c, l in zip(color, label)]
+    # Legend positioned to the right
+    patches = [mpatches.Patch(color=c, label=l) for c, l in zip(colors, labels)]
     fig.subplots_adjust(right=0.80)   # reserve space
     ax0 = fig.axes[0]
     ax0.legend(
@@ -115,7 +103,7 @@ def overlay_corner_plot(
         fontsize="medium",
     )
 
-    plt.plot()
+    plt.show()
 
     return fig
 
@@ -127,15 +115,15 @@ def find_init_bounds(
         PUB : np.ndarray = None
     ):
     """
-    Function for find the bounds to sample uniformly from when chosing starting point for 
+    Function for find the bounds to sample uniformly from when choosing starting point for 
     VBMC. 
     If plausible lower bounds (`PLB`) are specified, it uses those as lower sampling bounds
     (`sample_LB`), otherwise it uses lower bounds (`LB`). 
     Upper sampling bounds (`sample_UB`) are determined in the same way with plausible upper bounds 
     (`PUB`) or upper bounds (`UB`).
 
-    NOTE: At least one of LB, UB, PLB and PUB must be specified as an array with the 
-    same dimensionlity of the inference problem.
+    NOTE: At least one of `LB`, `UB`, `PLB` and `PUB` must be specified as an array with the 
+    same dimensionality of the inference problem.
 
     Parameters:
     -----------
@@ -143,8 +131,8 @@ def find_init_bounds(
         Inputs for VBMC. They represent lower (`LB`) and upper (`UB`) bounds 
         for the coordinate vector, `x`, so that the posterior has support on 
         `LB` < `x` < `UB`. If scalars, the bound is replicated in each dimension. 
-        Use ``None`` for `LB` and `UB` if no bounds exist. Set `LB` [`d`] = -``inf``
-        and `UB` [`d`] = ``inf`` if the `d`-th coordinate is unbounded (while
+        Use ``None`` for `LB` and `UB` if no bounds exist. Set `LB` [`d`] = -`inf`
+        and `UB` [`d`] = `inf` if the `d`-th coordinate is unbounded (while
         other coordinates may be bounded). Note that if `LB` and `UB` contain
         unbounded variables, the respective values of `PLB` and `PUB` need to
         be specified (see below). If `PLB` and `PUB` are not specified (see below), 
@@ -167,7 +155,7 @@ def find_init_bounds(
     --------
     sample_LB, sample_UB : np.ndarray
         Lower (`sample_LB`) and upper (`sample_UB`) bounds to sample uniformly from 
-        when initialising VBMC.
+        when initializing VBMC.
     """
 
     # Infer problem dimensionality from bounds
