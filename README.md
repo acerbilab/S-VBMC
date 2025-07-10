@@ -5,6 +5,9 @@ Stacking Variational Bayesian Monte Carlo (S-VBMC) is a fast post-processing ste
 
 A key advantage of S-VBMC is its efficiency: **the original model is never re-evaluated**, making it an inexpensive way to boost inference performance.
 
+### When should it be used?
+
+
 
 ### Repository layout
 
