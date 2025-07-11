@@ -68,6 +68,7 @@ For a detailed walkthrough, see the `examples.ipynb` notebook, which optionally 
 
 **Note**: For compatibility with VBMC, this implementation of S-VBMC stores results in `NumPy` arrays. However, it uses `PyTorch` under the hood to run the ELBO optimization.
 
+-----
 
 ## ⚠️ Important: how to use the final posterior
 
