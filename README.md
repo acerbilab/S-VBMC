@@ -1,7 +1,7 @@
 # Stacking Variational Bayesian Monte Carlo (S-VBMC)
 
 ### Overview
-Stacking Variational Bayesian Monte Carlo (S-VBMC) is a fast post-processing step for [Variational Bayesian Monte Carlo (VBMC)](https://github.com/acerbilab/pyvbmc). VBMC produces a variational posterior in the form of a Gaussian mixture. S-VBMC improves upon this by combining ("stacking") the Gaussian mixture components from several independent VBMC runs into a single, larger mixture, which we call "stacked posterior". It then re-optimizes the weights of this combined mixture to maximize the combined Evidence Lower BOund (ELBO, a lower bound on log [model evidence](https://en.wikipedia.org/wiki/Marginal_likelihood)). 
+Stacking Variational Bayesian Monte Carlo (S-VBMC) is a fast post-processing step for [Variational Bayesian Monte Carlo (VBMC)](https://github.com/acerbilab/pyvbmc). VBMC is an approximate Bayesian inference technique that produces a variational posterior in the form of a Gaussian mixture. S-VBMC improves upon this by combining ("stacking") the Gaussian mixture components from several independent VBMC runs into a single, larger mixture, which we call "stacked posterior". It then re-optimizes the weights of this combined mixture to maximize the combined Evidence Lower BOund (ELBO, a lower bound on log [model evidence](https://en.wikipedia.org/wiki/Marginal_likelihood)). 
 
 A key advantage of S-VBMC is its efficiency: **the original model is never re-evaluated**, making it an inexpensive way to boost inference performance. Furthermore, **no communication is needed among VBMC runs**, making it possible to run them in parallel before applying S-VBMC as a post-processing step with negligible computational overhead.
 
@@ -9,7 +9,7 @@ A key advantage of S-VBMC is its efficiency: **the original model is never re-ev
 
 S-VBMC works as a post-processing step for VBMC, so it shares its use cases (described [here](https://github.com/acerbilab/pyvbmc/tree/main?tab=readme-ov-file#when-should-i-use-pyvbmc)).
 
-Performing several VBMC inference runs with different initialization points [is already recommended by the developers](https://github.com/acerbilab/pyvbmc/blob/main/examples/pyvbmc_example_4_validation.ipynb) for robustness and convergence diagnostics; therefore, S-VBMC naturally fits into VBMC's best practices. Because S-VBMC is inexpensive and effective, we recommend using it whenever you first perform inference with VBMC.
+Performing several VBMC inference runs with different initialization points [is already recommended by the developers](https://github.com/acerbilab/pyvbmc/blob/main/examples/pyvbmc_example_4_validation.ipynb) for robustness and convergence diagnostics; therefore, S-VBMC naturally fits into VBMC's best practices. Because S-VBMC is inexpensive and effective, we recommend using it whenever you first perform inference with VBMC. It is especially useful when separate VBMC runs yield noticeably different variational posteriors, which might happen when the target distribution has a particularly complex shape (see the notebook `examples.ipynb` for two examples of this).
 
 ### Repository layout
 
@@ -19,7 +19,7 @@ This repository is organized as follows:
   - `examples.ipynb` is a notebook showing how to use the `SVBMC` class (and, optionally, VBMC) on our two synthetic examples (multimodal target and ring target).
   - `targets.py` contains the `GMM` and `Ring` classes, our synthetic targets that are used in the `examples.ipynb` notebook.
   - `utils.py` contains handy functions that are used in the `examples.ipynb` notebook.
-  - `vbmc_runs` is a folder containing the VBMC outputs from our multimodal target (in the `vbmc_runs/GMM` sub-folder) and from our ring-shaped target (in the `vbmc_runs/Ring` sub-folder). These are `.pkl` files.
+  - `vbmc_runs` is a folder containing 10 VBMC outputs from our multimodal target (in the `vbmc_runs/GMM` sub-folder) and 10 from our ring-shaped target (in the `vbmc_runs/Ring` sub-folder). These are `.pkl` files.
   - `requirements.txt` contains all the dependencies necessary to run the algorithm.
 
 -----
@@ -66,7 +66,7 @@ print(f"Stacked ELBO: {vp_stacked.elbo['estimated']}")
 
 For a detailed walkthrough, see the `examples.ipynb` notebook, which optionally includes a minimal guide on how to run VBMC multiple times.
 
-**Note**: For compatibility with PyVBMC, this implementation of S-VBMC stores results in `NumPy` arrays. However, it uses `PyTorch` under the hood to run the ELBO optimization.
+**Note**: For compatibility with VBMC, this implementation of S-VBMC stores results in `NumPy` arrays. However, it uses `PyTorch` under the hood to run the ELBO optimization.
 
 
 ## ⚠️ Important: how to use the final posterior
