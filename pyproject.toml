@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "svbmc"
+version = "0.1.0"
+description = "Stacking Variational Bayesian Monte Carlo"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+
+dependencies = [
+    "numpy>=2.3",
+    "scipy>=1.16",
+    "torch>=2.7",
+    "corner>=2.2",
+    "matplotlib>=3.10",
+    "GPyReg>=1.0.2",
+    "pyvbmc>=1.0.4"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

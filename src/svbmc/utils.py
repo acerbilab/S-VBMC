@@ -1,3 +1,7 @@
+# AI Summary: Utility helpers for plotting and initialization; moved into package namespace.
+# AI Summary: Utility helpers for plotting and initialization; exposes overlay_corner_plot and find_init_bounds.
+__all__ = ["overlay_corner_plot", "find_init_bounds"]
+
 import itertools
 from typing import List, Tuple, Optional
 

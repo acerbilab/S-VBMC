@@ -1,3 +1,7 @@
+# AI Summary: Synthetic target distributions for testing (GMM & Ring) now inside package namespace.
+# AI Summary: Provides synthetic target distributions (GMM & Ring) used for testing and examples in SVBMC.
+__all__ = ["GMM", "Ring"]
+
 import numpy as np
 from scipy.special import logsumexp
 
@@ -141,5 +145,6 @@ class Ring:
             i += 1
 
         return samples
+
 
 

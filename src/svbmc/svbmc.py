@@ -1,3 +1,8 @@
+# AI Summary: Implements the SVBMC algorithm and now resides within the package namespace.
+# AI Summary: Implements the SVBMC algorithm and now exposes public API symbols and package version.
+__version__ = "0.1.0"
+__all__ = ["SVBMC", "__version__"]
+
 import numpy as np
 import torch
 import torch.optim as optim

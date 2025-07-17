@@ -1,0 +1,5 @@
+# AI Summary: Ensures the long description (README) and license files
+#             are packaged into the source distribution for PyPI.
+include README.md
+include LICENSE*
+prune vbmc_runs
