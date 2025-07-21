@@ -1,0 +1,77 @@
+# AI Summary: GitHub Actions workflow building the wheel, installing it in a clean
+# virtual environment, running the full test‑suite, and performing a smoke‑test
+# across Python 3.10–3.12 to ensure the published package works end‑to‑end.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build wheel virtualenv
+
+      - name: Build sdist and wheel
+        run: python -m build --sdist --wheel --outdir dist/
+
+      - name: Create clean virtualenv & install wheel
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install dist/*.whl
+          python -m pip install pytest
+
+      - name: Run unit tests (installed wheel)
+        run: |
+          source venv/bin/activate
+          pytest -q
+
+      - name: Smoke‑test SVBMC optimise()
+        run: |
+          source venv/bin/activate
+          python - <<'PY'
+          import svbmc, numpy as np
+
+          class _Identity:
+              def __call__(self, x): return x
+              def inverse(self, x): return x
+              def log_abs_det_jacobian(self, x):
+                  import numpy as np
+                  return np.zeros(x.shape[0]) if isinstance(x, np.ndarray) else 0.0
+
+          class _MockVP:
+              def __init__(self):
+                  self.mu = np.zeros((2, 1))
+                  self.sigma = np.ones((2, 1))
+                  self.lambd = np.ones((2, 1))
+                  self.w = np.ones(1)
+                  self.stats = {"I_sk": np.ones((5, 1)), "elbo": 0.0}
+                  self.parameter_transformer = _Identity()
+              def sample(self, n):
+                  return np.zeros((n, 2)), None
+
+          vp = _MockVP()
+          svbmc.SVBMC([vp]).optimize(version="ns", n_samples=5)
+          print("Smoke‑test completed successfully.")
+          PY
+        shell: bash
+    
