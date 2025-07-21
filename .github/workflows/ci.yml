@@ -1,6 +1,6 @@
-# AI Summary: GitHub Actions workflow building the wheel, installing it in a clean
-# virtual environment, running the full test‑suite, and performing a smoke‑test
-# across Python 3.10–3.12 to ensure the published package works end‑to‑end.
+# AI Summary: GitHub Actions workflow building the wheel, installing it into an
+# isolated conda environment, running the test‑suite, and performing a smoke‑
+# test across Python 3.10–3.12 to ensure the distributed package works end‑to‑end.
 name: CI
 
 on:
@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up base Python (for build tools)
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -27,27 +27,36 @@ jobs:
       - name: Install build tooling
         run: |
           python -m pip install --upgrade pip
-          python -m pip install build wheel virtualenv
+          python -m pip install build wheel
 
-      - name: Build sdist and wheel
+      - name: Build sdist & wheel
         run: python -m build --sdist --wheel --outdir dist/
 
-      - name: Create clean virtualenv & install wheel
+      # ---------------------------------------------------------------------#
+      # Create a fresh *conda* environment for installation and testing      #
+      # ---------------------------------------------------------------------#
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+          channels: conda-forge,defaults
+          activate-environment: test-env
+
+      - name: Install wheel and test dependencies
+        shell: bash -l {0}
         run: |
-          python -m venv venv
-          source venv/bin/activate
-          python -m pip install --upgrade pip
-          python -m pip install dist/*.whl
-          python -m pip install pytest
+          pip install --upgrade pip
+          pip install dist/*.whl
+          pip install pytest
 
       - name: Run unit tests (installed wheel)
-        run: |
-          source venv/bin/activate
-          pytest -q
+        shell: bash -l {0}
+        run: pytest -q
 
       - name: Smoke‑test SVBMC optimise()
+        shell: bash -l {0}
         run: |
-          source venv/bin/activate
           python - <<'PY'
           import svbmc, numpy as np
 
@@ -73,5 +82,4 @@ jobs:
           svbmc.SVBMC([vp]).optimize(version="ns", n_samples=5)
           print("Smoke‑test completed successfully.")
           PY
-        shell: bash
     
