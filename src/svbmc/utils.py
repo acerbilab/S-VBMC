@@ -154,7 +154,14 @@ def overlay_corner_plot(
         fontsize="medium",
     )
 
-    plt.show()
+    # Display only on interactive backends to avoid warnings with non‑interactive ones
+    # (e.g. “Agg” used in head‑less test environments).
+    if not plt.get_backend().lower().endswith("agg"):
+        plt.show()
+    else:
+        # Ensure the canvas is rendered so downstream inspection of the figure
+        # (axes, artists, etc.) works without requiring an explicit show.
+        fig.canvas.draw()
 
     return fig
 

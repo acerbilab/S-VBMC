@@ -585,6 +585,12 @@ class SVBMC:
 
         # Tighten the layout 
         fig.tight_layout()
-        plt.show()
+        # Show figure only when using an interactive backend to avoid head‑less
+        # warnings during automated tests.
+        if not plt.get_backend().lower().endswith("agg"):
+            plt.show()
+        else:
+            # Draw the canvas so that the figure is fully initialised.
+            fig.canvas.draw()
 
         return fig
