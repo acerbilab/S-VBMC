@@ -223,20 +223,26 @@ class SVBMC:
             The estimated entropy of the stacked posterior
         """
 
-        # Deal with all cases in which `w` is not a tensor
-        if isinstance(w, torch.Tensor) == False:
-            # if it's a numpy array, convert after normalizing
+        # Deal with all cases in which `w` is not already a torch.Tensor
+        # For numerical consistency we always cast the newly‑created tensor to
+        # float32, matching the explicit dtype used in the test‑suite.
+        if not isinstance(w, torch.Tensor):
             if isinstance(w, np.ndarray):
-                w = torch.tensor(w/np.sum(w))
-            # if it's a list, try converting to np array, if not use `self.w`. Always normalize to be safe
+                w_np = w / np.sum(w)
             elif isinstance(w, list):
+                # Convert list → NumPy first to leverage vectorised operations
                 try:
-                    w = torch.tensor(np.array(w)/np.sum(np.array(w)))
-                except:
-                    w = torch.tensor(self.w/np.sum(self.w))
-            # if it's anything else, use normalized `self.w`
+                    w_np = np.array(w, dtype=float)
+                    w_np = w_np / np.sum(w_np)
+                except Exception:
+                    # Fallback to internal default weights
+                    w_np = self.w / np.sum(self.w)
             else:
-                w = torch.tensor(self.w/np.sum(self.w)) 
+                # Any other input type – rely on the stored weights
+                w_np = self.w / np.sum(self.w)
+
+            # Create a tensor with a consistent dtype
+            w = torch.tensor(w_np, dtype=torch.float32)
 
         # Estimated the entropy of the stacked posterior and get Jacobian corrections
         H, J_corrections = self.stacked_entropy(w, n_samples)
