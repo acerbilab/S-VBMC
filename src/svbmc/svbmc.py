@@ -412,6 +412,8 @@ class SVBMC:
             # If the stacked ELBO has not improved in the last 5 steps, we consider it converged 
             if convergence_counter >= 5:
                 w_final = torch.softmax(w_best, dim=-1)
+                # Cast to the global default dtype (float32) for consistency with downstream checks
+                w_final = w_final.to(torch.get_default_dtype())
                 return w_final, elbo_best, entropy_best
 
             # Backprop and take an optimization step
@@ -420,7 +422,8 @@ class SVBMC:
 
         # Return the final mixture weights if the max step count has been reached
         w_final = torch.softmax(w_best, dim=-1)
-        
+        # Cast to the global default dtype (float32) so calling code sees a consistent type
+        w_final = w_final.to(torch.get_default_dtype())
         return w_final, elbo_best, entropy_best
     
 
