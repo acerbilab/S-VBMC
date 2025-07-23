@@ -52,7 +52,10 @@ class SVBMC:
         self.I_corrected = []
         # Initialize `E_corrected` as zeros array
         self.E_corrected = np.zeros((self.M))
-        
+
+        # Dedicated seed to guarantee deterministic MC estimates across
+        # repeated calls (important for unit‑test reproducibility).
+        self._svbmc_random_seed = 0
     
     def stacked_entropy(
             self,w: torch.Tensor, 
@@ -97,6 +100,10 @@ class SVBMC:
         dtype   = w.dtype          
         device  = w.device
 
+        # Local, fixed‑seed PRNG so that every call starts from the same
+        # state, making entropy estimates repeatable.
+        rng = np.random.RandomState(self._svbmc_random_seed)
+
         w = w.reshape(1, K_total) 
         w = w / w.sum()  # ensure normalized
         log_w = torch.log(w + 1e-40) # take the log
@@ -130,9 +137,12 @@ class SVBMC:
         for mk, sc in enumerate(subcomps):
 
             # sample in the transformed space of the `mk`-th component (`m`-th VBMC posterior's feature space)
-            samples_sn = sp.stats.multivariate_normal.rvs(mean=np.zeros((self.D)), 
-                                                          cov=np.eye(self.D), 
-                                                          size = n_samples)  # [`n_samples`, `self.D`]
+            samples_sn = sp.stats.multivariate_normal.rvs(
+                mean=np.zeros((self.D)),
+                cov=np.eye(self.D),
+                size=n_samples,
+                random_state=rng,  # deterministic sampling
+            )  # [`n_samples`, `self.D`]
             x_mk_transform = samples_sn * sc['sigma'] + sc['mu'] # [`n_samples`, `self.D`]
 
             # Store Jacobian correction 
