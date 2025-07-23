@@ -357,8 +357,11 @@ class SVBMC:
 
         elif version == "ns":
             print("Naive stacking. Just averaging VBMC posteriors.")
-            # Return a *flat* 1‑D tensor so downstream code and tests can rely on ndim == 1
-            w_final = torch.tensor(self.w / np.sum(self.w)).flatten()
+            # Return a *flat* 1‑D tensor (using the default torch dtype) so downstream code and tests can rely on ndim == 1
+            w_final = torch.tensor(
+                self.w / np.sum(self.w),
+                dtype=torch.get_default_dtype()
+            ).flatten()
             elbo_best, entropy_best = self.stacked_ELBO(w_final, n_samples=n_samples)
             return w_final, elbo_best, entropy_best
 
