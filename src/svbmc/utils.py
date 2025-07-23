@@ -100,6 +100,48 @@ def overlay_corner_plot(
         if _returned_fig is not None:
             fig = _returned_fig
 
+    # -----------------------------------------------------------------
+    # Fallback: if *corner* didn't create any axes (e.g. when the dependency
+    # is stubbed in a head‑less test run), generate a minimal triangular grid
+    # so that subsequent legend code has at least one axis to attach to.
+    # -----------------------------------------------------------------
+    if len(fig.axes) == 0:
+        # Create a D×D grid of subplots
+        axes_grid = []
+        for r in range(D):
+            row_axes = []
+            for c in range(D):
+                ax = fig.add_subplot(D, D, r * D + c + 1)
+                row_axes.append(ax)
+            axes_grid.append(row_axes)
+
+        # Populate diagonal histograms and lower‑triangle scatter plots
+        for samp_arr, col in zip(samples, colors):
+            # Diagonal: 1‑D histograms
+            for d in range(D):
+                axes_grid[d][d].hist(
+                    samp_arr[:, d],
+                    bins=corner_kwargs.get("bins", 20),
+                    color=col,
+                    histtype="step",
+                    density=True,
+                )
+            # Lower‑triangle: 2‑D scatters
+            for i in range(1, D):
+                for j in range(i):
+                    axes_grid[i][j].scatter(
+                        samp_arr[:, j],
+                        samp_arr[:, i],
+                        s=10,
+                        alpha=0.3,
+                        color=col,
+                    )
+
+        # Hide the (unused) upper‑triangle axes for clarity
+        for i in range(D):
+            for j in range(i + 1, D):
+                axes_grid[i][j].set_visible(False)
+
     # Legend positioned to the right
     patches = [mpatches.Patch(color=c, label=l) for c, l in zip(colors, labels)]
     fig.subplots_adjust(right=0.80)   # reserve space
