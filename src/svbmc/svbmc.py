@@ -357,7 +357,8 @@ class SVBMC:
 
         elif version == "ns":
             print("Naive stacking. Just averaging VBMC posteriors.")
-            w_final = torch.tensor(self.w/np.sum(self.w)) 
+            # Return a *flat* 1‑D tensor so downstream code and tests can rely on ndim == 1
+            w_final = torch.tensor(self.w / np.sum(self.w)).flatten()
             elbo_best, entropy_best = self.stacked_ELBO(w_final, n_samples=n_samples)
             return w_final, elbo_best, entropy_best
 
@@ -488,6 +489,9 @@ class SVBMC:
             The samples from the stacked posterior
         """
 
+        # Work with a flat 1‑D view of the weights regardless of their stored shape
+        w_flat = self.w.ravel()
+
         idx = 0
         Xs = []
         # Loop over vp objects to use the PyVBMC's sample function
@@ -495,9 +499,9 @@ class SVBMC:
             # Copy to avoid altering the original
             vp_copy = copy.deepcopy(vp)
             # Get relative weight of the individual VBMC posterior (`omega`)
-            omega = np.sum(self.w[:,idx:idx+self.K[m]])
+            omega = np.sum(w_flat[:,idx:idx+self.K[m]])
             # change the weights within the vp object to correspond to the optimized ones (and normalize)
-            vp_copy.w = self.w[:,idx:idx+self.K[m]]/omega
+            vp_copy.w = w_flat[:,idx:idx+self.K[m]]/omega
             # Use the PyVBMC sampling function to sample from individual posteriors in the base space.
             # Sample proportionally to the relative weight of the individual VBMC posterior.
             samples, _ = vp_copy.sample(int(np.round(n_samples*omega))) 
