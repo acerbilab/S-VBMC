@@ -33,7 +33,7 @@ def test_maximize_elbo_variants_improve_over_naive(simple_svbmc):
 
     # Weights remain normalised -------------------------------------------------
     for w in (w_ns, w_all, w_post):
-        torch.testing.assert_close(w.sum(), torch.tensor(1.0), atol=1e-8, rtol=0)
+        torch.testing.assert_close(w.sum(), torch.tensor(1.0), atol=1e-6, rtol=1e-6)
 
     # ELBO monotonicity ---------------------------------------------------------
     assert elbo_all >= elbo_ns

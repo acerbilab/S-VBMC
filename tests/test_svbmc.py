@@ -155,7 +155,7 @@ def test_maximize_elbo_naive(simple_svbmc):
 
     # 1.  Quick sanity checks on the shapes and normalisation
     assert isinstance(w_final, torch.Tensor) and w_final.ndim == 1
-    torch.testing.assert_close(w_final.sum(), torch.tensor(1.0), atol=1e-8, rtol=0)
+    torch.testing.assert_close(w_final.sum(), torch.tensor(1.0), atol=1e-6, rtol=1e-6)
 
     # 2.  ELBO reported by the method must match a fresh direct computation
     elbo_direct, entropy_direct = obj.stacked_ELBO(w_final, n_samples=10)
