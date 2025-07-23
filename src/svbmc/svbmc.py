@@ -461,10 +461,14 @@ class SVBMC:
         w, ELBO, H = self.maximize_ELBO(n_samples = n_samples, lr = lr, max_steps = max_steps, version = version)
 
         # Back to numpy
-        self.w = w.detach().numpy()
-        self.entropy = H.detach().numpy()
-        ELBO = ELBO.detach().numpy()
+        self.w = w.detach().cpu().numpy().astype(np.float64)
+        # Re‑normalise in 64‑bit to remove any residual round‑off error
+        self.w /= self.w.sum(dtype=np.float64)
 
+        # Scalars expected as plain Python floats by the test‑suite
+        self.entropy = float(H.detach().cpu().numpy())
+        ELBO = float(ELBO.detach().cpu().numpy())
+        
         # Get median expected log joints (component and posterior-wise)
         I_median = np.median(self.I_corrected) # component-wise
         E_median = np.median(self.E_corrected) # posterior-wise
