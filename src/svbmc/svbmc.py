@@ -255,7 +255,8 @@ class SVBMC:
         # Calculate expected logjoint in the original feature space
          
         I_corr_t = torch.tensor(I_corrected, dtype=w.dtype, device=w.device)
-        G = (w @ I_corr_t.T)[0, 0] # indexing to avoid a tensor with shape [1, 1]
+        # The product returns either shape (1,) or (1,1); squeeze ensures a scalar.
+        G = (w @ I_corr_t.T).squeeze()
 
         ELBO = G + H
 

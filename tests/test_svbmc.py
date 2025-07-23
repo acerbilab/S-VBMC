@@ -70,22 +70,6 @@ class _MockVP:
         # first component's mean – this is *more* than enough for the tests.
         return np.random.randn(n, d) + self.mu[:, 0], None
 
-
-# -----------------------------------------------------------------------------
-# Fixtures
-# -----------------------------------------------------------------------------
-@pytest.fixture(scope="module")
-def simple_svbmc():
-    """Return an ``SVBMC`` instance built from two identical mock posteriors."""
-
-    torch.manual_seed(0)
-    np.random.seed(0)
-
-    vp1 = _MockVP(d=2, k=2, mu_offset=0.0, elbo=1.0)
-    vp2 = _MockVP(d=2, k=2, mu_offset=1.0, elbo=1.0)  # different location
-
-    return svbmc.SVBMC([vp1, vp2])
-
 # -----------------------------------------------------------------------------
 # Tests for basic object construction
 # -----------------------------------------------------------------------------
