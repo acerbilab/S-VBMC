@@ -83,17 +83,22 @@ def overlay_corner_plot(
     fig = plt.figure(figsize=figsize)
 
     for idx, (samp_arr, col) in enumerate(zip(samples, colors)):
-        weights = np.full(samp_arr.shape[0], 1.0 / samp_arr.shape[0])  # area-normalized
-        fig = corner.corner(
+        # Area‑normalise weights so each dataset carries equal influence
+        weights = np.full(samp_arr.shape[0], 1.0 / samp_arr.shape[0])
+        # corner.corner **may** return None (e.g. when stubbed in tests);
+        # keep a stable handle to the original figure in that case.
+        _returned_fig = corner.corner(
             samp_arr,
             labels=axis_labels,
             color=col,
             weights=weights,
             smooth=smooth,
-            show_titles=(idx == 0), # show stats only once
+            show_titles=(idx == 0),  # show stats only once
             fig=fig,
             **corner_kwargs,
         )
+        if _returned_fig is not None:
+            fig = _returned_fig
 
     # Legend positioned to the right
     patches = [mpatches.Patch(color=c, label=l) for c, l in zip(colors, labels)]
