@@ -158,7 +158,7 @@ def test_maximize_elbo_naive(simple_svbmc):
     torch.testing.assert_close(w_final.sum(), torch.tensor(1.0), atol=1e-8, rtol=0)
 
     # 2.  ELBO reported by the method must match a fresh direct computation
-    elbo_direct, entropy_direct = obj.stacked_ELBO(w_final)
+    elbo_direct, entropy_direct = obj.stacked_ELBO(w_final, n_samples=10)
     torch.testing.assert_close(elbo_best, elbo_direct, rtol=1e-6, atol=1e-6)
     torch.testing.assert_close(entropy_best, entropy_direct, rtol=1e-6, atol=1e-6)
 

@@ -502,9 +502,11 @@ class SVBMC:
             # Copy to avoid altering the original
             vp_copy = copy.deepcopy(vp)
             # Get relative weight of the individual VBMC posterior (`omega`)
-            omega = np.sum(w_flat[:,idx:idx+self.K[m]])
+            omega = np.sum(w_flat[idx: idx + self.K[m]])
             # change the weights within the vp object to correspond to the optimized ones (and normalize)
-            vp_copy.w = w_flat[:,idx:idx+self.K[m]]/omega
+            comp_weights = w_flat[idx: idx + self.K[m]]
+            vp_copy.w = comp_weights / omega
+            
             # Use the PyVBMC sampling function to sample from individual posteriors in the base space.
             # Sample proportionally to the relative weight of the individual VBMC posterior.
             samples, _ = vp_copy.sample(int(np.round(n_samples*omega))) 
