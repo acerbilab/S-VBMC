@@ -174,14 +174,37 @@ def find_init_bounds(
 
     # Helper to broadcast / validate 
     def _to_array(x, name):
+        """
+        Helper to validate and—where appropriate—broadcast user‑supplied bound
+        vectors.
+
+        Accepted inputs
+        ----------------
+        1. **True scalars** (plain `int`/`float` or 0‑D NumPy scalars): these are
+           broadcast to the problem dimensionality `D`.
+        2. **Arrays/vectors** whose length exactly matches `D`.
+
+        Any other length (including a 1‑element *sequence*, e.g. ``[1]``)
+        triggers a ``ValueError`` to avoid hiding length mismatches such as
+        ``LB=[-1, -1]`` with ``UB=[1]``.
+        """
         if x is None:
             return None
+
+        # Broadcast genuine scalars
+        if np.isscalar(x):
+            return np.full(D, float(x))
+
         arr = np.asarray(x, dtype=float)
-        if arr.size == 1:                         # scalar → broadcast
+
+        # Handle NumPy 0‑D scalar (e.g. ``np.float64(3.0)``)
+        if arr.ndim == 0:
             return np.full(D, arr.item())
+
         if arr.size == D:                         # correct length
             return arr
-        raise ValueError(f"{name} has length {arr.size}, expected 1 or {D}.")
+
+        raise ValueError(f"{name} has length {arr.size}, expected a scalar or {D}.")
 
     # Broadcast everything
     LB  = _to_array(LB,  "LB")
