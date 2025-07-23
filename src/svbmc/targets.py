@@ -119,7 +119,9 @@ class Ring:
         x = np.asarray(x)
         d  = x - self.center        # vector(s) from center
         r  = np.linalg.norm(d, axis=-1)
-        return np.log(r) - 0.5 * ((r - self.R) / self.sigma)**2
+        # Clamp the radius to avoid log(0) at the exact centre, which would yield -inf
+        r_safe = np.maximum(r, np.finfo(float).tiny)
+        return np.log(r_safe) - 0.5 * ((r_safe - self.R) / self.sigma)**2
 
 
     # Sampling                                                           
