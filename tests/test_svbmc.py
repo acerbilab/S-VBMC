@@ -51,8 +51,8 @@ class _MockVP:
 
     def __init__(self, d: int, k: int, mu_offset: float = 0.0, elbo: float = 0.0):
         self.mu = np.zeros((d, k)) + mu_offset  # means in transformed space
-        self.sigma = np.ones((d, k))            # diagonal std‑devs
-        self.lambd = np.ones((d, k))            # scaling factors – keep at 1
+        self.sigma = np.ones((d, 1))            # diagonal std‑devs
+        self.lambd = np.ones((1, k))            # scaling factors – keep at 1
         self.w = np.full(k, 1.0 / k)            # uniform mixture weights
         # Statistics returned by VBMC – only the fields actually used by SVBMC
         self.stats = {
