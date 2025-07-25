@@ -47,10 +47,10 @@ def test_maximize_elbo_invalid_version(simple_svbmc):
 
 
 # -----------------------------------------------------------------------------#
-# optimise() convenience wrapper                                               #
+# optimize() convenience wrapper                                               #
 # -----------------------------------------------------------------------------#
 def test_optimize_updates_state(simple_svbmc):
-    """Calling optimise() should populate weights, entropy, and ELBO dict."""
+    """Calling optimize() should populate weights, entropy, and ELBO dict."""
     _set_seeds()
 
     simple_svbmc.optimize(n_samples=5, lr=0.2, max_steps=20, version="all-weights")
