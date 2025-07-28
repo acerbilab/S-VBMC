@@ -1,9 +1,6 @@
 # Athignore file
 .athignore
 
-# requirements
-requirements.txt
-
 # ides
 .vscode
 .idea
@@ -67,10 +64,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
-pyvbmc/testing/vbmc/vbmc_test.pkl
-pyvbmc/testing/vbmc/test_vbmc_save_dynamic.pkl
-pyvbmc/testing/vbmc/test_vbmc_save_dynamic_data.pkl
-pyvbmc/testing/variational_posterior/test_vp_save_dynamic.pkl
 
 # Translations
 *.mo
