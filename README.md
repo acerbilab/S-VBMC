@@ -1,26 +1,17 @@
 # Stacking Variational Bayesian Monte Carlo (S-VBMC)
 
-### Overview
-Stacking Variational Bayesian Monte Carlo (S-VBMC) is a fast post-processing step for [Variational Bayesian Monte Carlo (VBMC)](https://github.com/acerbilab/pyvbmc). VBMC is an approximate Bayesian inference technique that produces a variational posterior in the form of a Gaussian mixture. S-VBMC improves upon this by combining ("stacking") the Gaussian mixture components from several independent VBMC runs into a single, larger mixture, which we call "stacked posterior". It then re-optimizes the weights of this combined mixture to maximize the combined Evidence Lower BOund (ELBO, a lower bound on log [model evidence](https://en.wikipedia.org/wiki/Marginal_likelihood)). 
+## Overview
+Stacking Variational Bayesian Monte Carlo (S-VBMC)[[1](#references-and-citation)] is a fast post-processing step for [Variational Bayesian Monte Carlo (VBMC)](https://github.com/acerbilab/pyvbmc). VBMC is an approximate Bayesian inference technique that produces a variational posterior in the form of a Gaussian mixture (see the relevant papers [[2-4](#references-and-citation)] for more details). S-VBMC improves upon this by combining ("stacking") the Gaussian mixture components from several independent VBMC runs into a single, larger mixture, which we call "stacked posterior". It then re-optimizes the weights of this combined mixture to maximize the combined Evidence Lower BOund (ELBO, a lower bound on log [model evidence](https://en.wikipedia.org/wiki/Marginal_likelihood)). 
 
 A key advantage of S-VBMC is its efficiency: **the original model is never re-evaluated**, making it an inexpensive way to boost inference performance. Furthermore, **no communication is needed among VBMC runs**, making it possible to run them in parallel before applying S-VBMC as a post-processing step with negligible computational overhead.
 
-### When to use S-VBMC
+Refer to the S-VBMC paper for further details [[1](#references-and-citation)].
+
+## When to use S-VBMC
 
 S-VBMC works as a post-processing step for VBMC, so it shares its use cases (described [here](https://github.com/acerbilab/pyvbmc/tree/main?tab=readme-ov-file#when-should-i-use-pyvbmc)).
 
 Performing several VBMC inference runs with different initialization points [is already recommended by the developers](https://github.com/acerbilab/pyvbmc/blob/main/examples/pyvbmc_example_4_validation.ipynb) for robustness and convergence diagnostics; therefore, S-VBMC naturally fits into VBMC's best practices. Because S-VBMC is inexpensive and effective, we recommend using it whenever you first perform inference with VBMC. It is especially useful when separate VBMC runs yield noticeably different variational posteriors, which might happen when the target distribution has a particularly complex shape (see the notebook `examples.ipynb` for two examples of this).
-
-### Repository layout
-
-This repository is organized as follows:
-
-  - `svbmc.py` contains the `SVBMC` class, which runs the main algorithm.
-  - `examples.ipynb` is a notebook showing how to use the `SVBMC` class (and, optionally, VBMC) on our two synthetic examples (multimodal target and ring target).
-  - `targets.py` contains the `GMM` and `Ring` classes, our synthetic targets that are used in the `examples.ipynb` notebook.
-  - `utils.py` contains handy functions that are used in the `examples.ipynb` notebook.
-  - `vbmc_runs` is a folder containing 10 VBMC outputs from our multimodal target (in the `vbmc_runs/GMM` sub-folder) and 10 from our ring-shaped target (in the `vbmc_runs/Ring` sub-folder). These are `.pkl` files.
-  - `requirements.txt` contains all the dependencies necessary to run the algorithm.
 
 -----
 
@@ -28,11 +19,20 @@ This repository is organized as follows:
 
 ### 1. Installation
 
-After creating and activating a virtual environment, install all required dependencies:
-
-```bash
-pip install -r requirements.txt
-```
+Create a new environment in `conda` and activate it:
+   ```bash
+   conda create -n svbmc python=3.11
+   conda activate svbmc
+   ```
+Install `S-VBMC`:
+   1. Clone the repo:
+   ```bash
+   git clone https://github.com/sfrancesco21/S-VBMC.git
+   ```
+   2. Install:
+   ```bash
+   pip install -e . 
+   ```
 
 ### 2. Running S-VBMC
 
@@ -54,7 +54,7 @@ for file in vp_files:
 Next, initialize the `SVBMC` object with this list and run the optimization.
 
 ```python
-from svbmc import SVBMC
+from svbmc.svbmc import SVBMC
 
 # Initialize the SVBMC object and optimize the weights
 vp_stacked = SVBMC(vp_list=vp_list)
@@ -64,7 +64,7 @@ vp_stacked.optimize()
 print(f"Stacked ELBO: {vp_stacked.elbo['estimated']}")
 ```
 
-For a detailed walkthrough, see the `examples.ipynb` notebook, which optionally includes a minimal guide on how to run VBMC multiple times.
+For a detailed walkthrough, see the `basic_usage.ipynb` notebook, which optionally includes a minimal guide on how to run VBMC multiple times.
 
 **Note**: For compatibility with VBMC, this implementation of S-VBMC stores results in `NumPy` arrays. However, it uses `PyTorch` under the hood to run the ELBO optimization.
 
@@ -83,6 +83,74 @@ This is because each VBMC run may use different internal parameter transformatio
 samples = vp_stacked.sample(n_samples=10000)
 ```
 
+## References and citation
 
+1. Silvestrin, F., Li, C., & Acerbi, L. (2025). Stacking Variational Bayesian Monte Carlo. arXiv preprint arXiv:2504.05004. ([paper on arXiv](https://arxiv.org/abs/2504.05004))
+2. Acerbi, L. (2018). Variational Bayesian Monte Carlo. In *Advances in Neural Information Processing Systems 31*: 8222-8232. ([paper + supplement on arXiv](https://arxiv.org/abs/1810.05558), [NeurIPS Proceedings](https://papers.nips.cc/paper/8043-variational-bayesian-monte-carlo))
+3. Acerbi, L. (2020). Variational Bayesian Monte Carlo with Noisy Likelihoods. In *Advances in Neural Information Processing Systems 33*: 8211-8222 ([paper + supplement on arXiv](https://arxiv.org/abs/2006.08655), [NeurIPS Proceedings](https://papers.nips.cc/paper/2020/hash/5d40954183d62a82257835477ccad3d2-Abstract.html)).
+4. Huggins, B., Li, C., Tobaben, M., Aarnos, M., & Acerbi, L. (2023). [PyVBMC: Efficient Bayesian inference in Python](https://joss.theoj.org/papers/10.21105/joss.05428). *Journal of Open Source Software* 8(86), 5428, https://doi.org/10.21105/joss.05428.
 
+Please cite all four references if you use S-VBMC in your work.
 
+## Additional references
+
+5. Acerbi, L. (2019). An Exploration of Acquisition and Mean Functions in Variational Bayesian Monte Carlo. In *Proc. Machine Learning Research* 96: 1-10. 1st Symposium on Advances in Approximate Bayesian Inference, Montréal, Canada. ([paper in PMLR](http://proceedings.mlr.press/v96/acerbi19a.html))
+
+## BibTeX
+
+```BibTeX
+@article{silvestrin2025stacking,
+  title={{S}tacking {V}ariational {B}ayesian {M}onte Carlo},
+  author={Silvestrin, Francesco and Li, Chengkun and Acerbi, Luigi},
+  journal={arXiv preprint arXiv:2504.05004},
+  year={2025}
+}
+
+@article{acerbi2018variational,
+  title={{V}ariational {B}ayesian {M}onte {C}arlo},
+  author={Acerbi, Luigi},
+  journal={Advances in Neural Information Processing Systems},
+  volume={31},
+  pages={8222--8232},
+  year={2018}
+}
+
+@article{acerbi2020variational,
+  title={{V}ariational {B}ayesian {M}onte {C}arlo with noisy likelihoods},
+  author={Acerbi, Luigi},
+  journal={Advances in Neural Information Processing Systems},
+  volume={33},
+  pages={8211--8222},
+  year={2020}
+}
+
+@article{huggins2023pyvbmc,
+    title = {PyVBMC: Efficient Bayesian inference in Python},
+    author = {Bobby Huggins and Chengkun Li and Marlon Tobaben and Mikko J. Aarnos and Luigi Acerbi},
+    publisher = {The Open Journal},
+    journal = {Journal of Open Source Software},
+    url = {https://doi.org/10.21105/joss.05428},
+    doi = {10.21105/joss.05428},
+    year = {2023},
+    volume = {8},
+    number = {86},
+    pages = {5428}
+  }
+
+@article{acerbi2019exploration,
+  title={An Exploration of Acquisition and Mean Functions in {V}ariational {B}ayesian {M}onte {C}arlo},
+  author={Acerbi, Luigi},
+  journal={PMLR},
+  volume={96},
+  pages={1--10},
+  year={2019}
+}
+```
+
+## License
+
+S-VBMC is released under the terms of the [BSD 3-Clause License](LICENSE.txt).
+
+## Acknowledgments
+
+PyVBMC was developed by [members](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/people) of the [Machine and Human Intelligence Lab](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/) at the University of Helsinki. 

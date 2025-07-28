@@ -1,5 +1,9 @@
-#Athignore file
+# Athignore file
 .athignore
+
+# requirements
+requirements.txt
+
 # ides
 .vscode
 .idea

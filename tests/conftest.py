@@ -82,4 +82,4 @@ def simple_svbmc():
     vp1 = _MockVP(d=2, k=2, mu_offset=0.0, elbo=1.0)
     vp2 = _MockVP(d=2, k=2, mu_offset=1.0, elbo=1.0)
 
-    return _svbmc.SVBMC([vp1, vp2])
+    return _svbmc.SVBMC([vp1, vp2], testing = True) 

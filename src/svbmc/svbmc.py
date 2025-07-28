@@ -28,11 +28,19 @@ class SVBMC:
     vp_list : list
         A list of ``VariationalPosterior`` (vp) objects output by VBMC 
         (see https://github.com/acerbilab/pyvbmc/tree/main for details)
+    testing: bool
+        Whether you are performing unit tests or not. If set to `True`, the sampling for `stacked_entropy()`
+        will be deterministic. In practice this slows down the optimization and overfits noise, so it 
+        should always be kept to `False` outside of testing.
     """
 
 
-    def __init__(self, vp_list):
+    def __init__(self, 
+                 vp_list : list, 
+                 testing: bool = False):
 
+        # whether we are performing unit tests or not
+        self.testing = testing
         # Store all the variational posterior (`vp`, output of PyVBMC) objects in one list
         self.vp_list = vp_list
         # Dimensionality of inference problem
@@ -59,7 +67,7 @@ class SVBMC:
     
     def stacked_entropy(
             self,w: torch.Tensor, 
-            n_samples: int = 20
+            n_samples: int = 20, 
             ):
         """
         Monte Carlo estimate of the mixture entropy for `K_total` components, 
@@ -102,7 +110,8 @@ class SVBMC:
 
         # Local, fixed‑seed PRNG so that every call starts from the same
         # state, making entropy estimates repeatable.
-        rng = np.random.RandomState(self._svbmc_random_seed)
+        if self.testing:
+            rng = np.random.RandomState(self._svbmc_random_seed)
 
         w = w.reshape(1, K_total) 
         w = w / w.sum()  # ensure normalized
@@ -137,12 +146,20 @@ class SVBMC:
         for mk, sc in enumerate(subcomps):
 
             # sample in the transformed space of the `mk`-th component (`m`-th VBMC posterior's feature space)
-            samples_sn = sp.stats.multivariate_normal.rvs(
-                mean=np.zeros((self.D)),
-                cov=np.eye(self.D),
-                size=n_samples,
-                random_state=rng,  # deterministic sampling
-            )  # [`n_samples`, `self.D`]
+            if self.testing:
+                samples_sn = sp.stats.multivariate_normal.rvs(
+                    mean=np.zeros((self.D)),
+                    cov=np.eye(self.D),
+                    size=n_samples,
+                    random_state=rng,  # deterministic sampling if performing unit tests
+                )  # [`n_samples`, `self.D`]
+            else:
+                samples_sn = sp.stats.multivariate_normal.rvs(
+                    mean=np.zeros((self.D)),
+                    cov=np.eye(self.D),
+                    size=n_samples,
+                )  # [`n_samples`, `self.D`]
+
             x_mk_transform = samples_sn * sc['sigma'] + sc['mu'] # [`n_samples`, `self.D`]
 
             # Store Jacobian correction 
@@ -284,7 +301,7 @@ class SVBMC:
             n_samples: int = 20, 
             lr: float = 0.1, 
             max_steps: int = 500, 
-            version: str = "all-weights"
+            version: str = "all-weights" 
             ):
         """
         Maximizes ``stacked_ELBO(`w`, `n_samples`)`` by parameterizing `w` via softmax of unconstrained logits.
@@ -307,7 +324,7 @@ class SVBMC:
                 - "posterior-only": optimizes w.r.t. omega, i.e., the weights of whole VBMC
                                 posteriors;
                 - "ns": naive stacking, simply re-normalizes the weights.
-
+    
         Returns:
         --------
         w_final: torch.Tensor 
@@ -458,7 +475,10 @@ class SVBMC:
         """
 
         # Optimize stacked ELBO 
-        w, ELBO, H = self.maximize_ELBO(n_samples = n_samples, lr = lr, max_steps = max_steps, version = version)
+        w, ELBO, H = self.maximize_ELBO(n_samples = n_samples, 
+                                        lr = lr, 
+                                        max_steps = max_steps, 
+                                        version = version)
 
         # Back to numpy
         self.w = w.detach().cpu().numpy().astype(np.float64)
