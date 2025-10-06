@@ -29,7 +29,7 @@ Install `svbmc`:
    ```bash
    git clone https://github.com/acerbilab/svbmc.git
    ```
-   2. Install:
+   2. Install from the cloned repository folder:
    ```bash
    pip install -e . 
    ```
