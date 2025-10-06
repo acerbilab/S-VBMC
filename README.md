@@ -11,7 +11,7 @@ Refer to the S-VBMC paper for further details [[1](#references-and-citation)].
 
 S-VBMC works as a post-processing step for VBMC, so it shares its use cases (described [here](https://github.com/acerbilab/pyvbmc/tree/main?tab=readme-ov-file#when-should-i-use-pyvbmc)).
 
-Performing several VBMC inference runs with different initialization points [is already recommended by the developers](https://github.com/acerbilab/pyvbmc/blob/main/examples/pyvbmc_example_4_validation.ipynb) for robustness and convergence diagnostics; therefore, S-VBMC naturally fits into VBMC's best practices. Because S-VBMC is inexpensive and effective, we recommend using it whenever you first perform inference with VBMC. It is especially useful when separate VBMC runs yield noticeably different variational posteriors, which might happen when the target distribution has a particularly complex shape (see [this notebook](https://github.com/sfrancesco21/S-VBMC/blob/main/examples/basic_usage.ipynb) for two examples of this).
+Performing several VBMC inference runs with different initialization points [is already recommended by the developers](https://github.com/acerbilab/pyvbmc/blob/main/examples/pyvbmc_example_4_validation.ipynb) for robustness and convergence diagnostics; therefore, S-VBMC naturally fits into VBMC's best practices. Because S-VBMC is inexpensive and effective, we recommend using it whenever you first perform inference with VBMC. It is especially useful when separate VBMC runs yield noticeably different variational posteriors, which might happen when the target distribution has a particularly complex shape (see [this notebook](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_1_basic_usage.ipynb) for two examples of this).
 
 -----
 
@@ -24,10 +24,10 @@ Create a new environment in `conda` and activate it:
    conda create -n svbmc python=3.11
    conda activate svbmc
    ```
-Install `S-VBMC`:
+Install `svbmc`:
    1. Clone the repo:
    ```bash
-   git clone https://github.com/sfrancesco21/S-VBMC.git
+   git clone https://github.com/acerbilab/svbmc.git
    ```
    2. Install:
    ```bash
@@ -64,7 +64,7 @@ vp_stacked.optimize()
 print(f"Stacked ELBO: {vp_stacked.elbo['estimated']}")
 ```
 
-For a detailed walkthrough, see [this notebook](https://github.com/sfrancesco21/S-VBMC/blob/main/examples/basic_usage.ipynb), which optionally includes a minimal guide on how to run VBMC multiple times. Additionally, [this notebook](https://github.com/sfrancesco21/S-VBMC/blob/main/examples/svbmc_example_2_noisy_likelihoods.ipynb) addresses scenarios where the target log-density evaluations are noisy.
+For a detailed walkthrough, see [this notebook](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_1_basic_usage.ipynb), which optionally includes a minimal guide on how to run VBMC multiple times. Additionally, [this notebook](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_2_noisy_likelihoods.ipynb) addresses scenarios where the target log-density evaluations are noisy.
 
 **Note**: For compatibility with VBMC, this implementation of S-VBMC stores results in `NumPy` arrays. However, it uses `PyTorch` under the hood to run the ELBO optimization.
 
@@ -153,4 +153,4 @@ S-VBMC is released under the terms of the [BSD 3-Clause License](LICENSE.txt).
 
 ## Acknowledgments
 
-PyVBMC was developed by [members](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/people) of the [Machine and Human Intelligence Lab](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/) at the University of Helsinki. 
+S-VBMC was developed by [members](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/people) of the [Machine and Human Intelligence Lab](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/) at the University of Helsinki. 

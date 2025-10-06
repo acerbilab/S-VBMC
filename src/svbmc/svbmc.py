@@ -22,12 +22,24 @@ class SVBMC:
 
     Initialize a ``SVBMC`` object to set up the inference problem, then run
     ``optimize()``. 
+    The initialization automatically filters out VBMC runs where:
+        1- The algorithm has not converged;
+        2- The algorith has converged poorly, with excessive uncertainty associated with at least one
+        of the components of the expected log-joint.
 
     Parameters:
     -----------
     vp_list : list
         A list of ``VariationalPosterior`` (vp) objects output by VBMC 
         (see https://github.com/acerbilab/pyvbmc/tree/main for details)
+    s_max : float
+        A tolerance bound for the maximum standard deviation associated with individual components 
+        of the expected log-joint `I_sk` (these values are specified within the ``VariationalPosterior`` 
+        objects in `vp_list`). If a VBMC run has any `I_sk` with associated standard deviation >= `s_max`, 
+        the whole run is considered poorly converged and discarded. Defaults to sqrt(5).
+    M_min : int | float
+        The minimum number (if `int` and > 1) or proportion (if `float` and <= 1) of VBMC runs to be used for S-VBMC. 
+        If the number of well-converged runs is below this value, an error is produced. Defaults to 2/3. 
     testing: bool
         Whether you are performing unit tests or not. If set to `True`, the sampling for `stacked_entropy()`
         will be deterministic. In practice this slows down the optimization and overfits noise, so it 
@@ -37,14 +49,35 @@ class SVBMC:
 
     def __init__(self, 
                  vp_list : list, 
+                 s_max : float = np.sqrt(5),
+                 M_min : float | int = 2/3,
                  testing: bool = False):
 
         # whether we are performing unit tests or not
         self.testing = testing
-        # Store all the variational posterior (`vp`, output of PyVBMC) objects in one list
-        self.vp_list = vp_list
+        # Store all the variational posterior (`vp`, output of PyVBMC) objects in one list, 
+        # filtered based on `s_max`
+        self.vp_list = [vp for vp in vp_list if (vp.stats['stable'] and np.sqrt(np.max(vp.stats['J_sjk'])) < s_max)]
+        # Set minimum number of runs according to `M_min`
+        if M_min <=0: # can't be negative
+            raise ValueError(f"`M_min` should be a positive number, but got {M_min}.")
+        elif M_min <=1: # proportion of total runs if <= 1
+            M_min = len(vp_list)*M_min
+        elif M_min > len(vp_list): # number of runs if float > 1
+            raise ValueError(f"`M_min` should be lower than `len(vp_list)`, but got {M_min} and {len(vp_list)}, respectively.")
+        elif np.round(M_min) != M_min: # number of runs if integer > 1
+            print(f"Warning: if you want to specify the minimum number of runs to use, you should input `M_min` as an integer. Rounding to closest integer, {int(np.round(M_min))}")
+            M_min = int(np.round(M_min))
+        else:
+            M_min = int(M_min)
+        # Check if enough runs passed the filters
+        if len(self.vp_list) < M_min:
+            raise ValueError(f"expected at least {M_min} well-converged VBMC runs, but got {len(self.vp_list)}. Check your VBMC runs or change the values of `s_max` and `M_min`.")
+        else:
+            print(f"Got {len(self.vp_list)} well-converged runs after filters.")
+        # If all is well, proceed with extracting useful variables
         # Dimensionality of inference problem
-        self.D = vp_list[0].mu.shape[0]
+        self.D = self.vp_list[0].mu.shape[0]
         # Number of components for each `vp`
         self.K = [vp.mu.shape[1] for vp in self.vp_list]
         # Number of `vp`s to stack
@@ -64,9 +97,11 @@ class SVBMC:
         # Dedicated seed to guarantee deterministic MC estimates across
         # repeated calls (important for unit‑test reproducibility).
         self._svbmc_random_seed = 0
-    
+
+
     def stacked_entropy(
-            self,w: torch.Tensor, 
+            self,
+            w: torch.Tensor, 
             n_samples: int = 20, 
             ):
         """
