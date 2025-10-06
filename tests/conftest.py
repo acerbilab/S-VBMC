@@ -57,6 +57,8 @@ class _MockVP:
         self.stats = {
             "I_sk": np.tile(np.arange(1, k + 1, dtype=float), (5, 1)),
             "elbo": elbo,
+            "stable": True, 
+            "J_sjk": 0.1*np.eye(k)
         }
 
     # The real PyVBMC returns (samples, log‑prob); SVBMC uses only samples.
