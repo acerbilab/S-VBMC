@@ -73,7 +73,7 @@ jobs:
                   self.sigma = np.ones((2, 1))
                   self.lambd = np.ones((2, 1))
                   self.w = np.ones(1)
-                  self.stats = {"I_sk": np.ones((5, 1)), "elbo": 0.0, "stable": True, "J_sjk": 0.1*np.eye(k)}
+                  self.stats = {"I_sk": np.ones((5, 1)), "elbo": 0.0, "stable": True, "J_sjk": 0.1*np.eye(1)}
                   self.parameter_transformer = _Identity()
               def sample(self, n):
                   return np.zeros((n, 2)), None
