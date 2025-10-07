@@ -57,11 +57,12 @@ def test_filters_keep_only_stable_and_below_threshold():
     """
     # Choose s_max so that J=0.01 (sqrt=0.1) passes and J=0.09 (sqrt=0.3) fails
     s_max = 0.2
-    good = _MockVP(stable=True,  J_value=0.01)   # sqrt=0.1 < 0.2 -> kept
+    good1 = _MockVP(stable=True,  J_value=0.01)   # sqrt=0.1 < 0.2 -> kept
+    good2 = _MockVP(stable=True,  J_value=0.01)   # sqrt=0.1 < 0.2 -> kept
     bad_j = _MockVP(stable=True, J_value=0.09)   # sqrt=0.3 >= 0.2 -> dropped
     bad_stable = _MockVP(stable=False, J_value=0.0)  # unstable -> dropped
 
-    obj = svbmc.SVBMC([good, bad_j, bad_stable], s_max=s_max, M_min=1)
+    obj = svbmc.SVBMC([good1, good2, bad_j, bad_stable], s_max=s_max, M_min=2)
 
     # Exactly one run should survive
     assert obj.M == 1
