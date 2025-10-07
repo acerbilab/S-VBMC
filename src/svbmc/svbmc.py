@@ -40,6 +40,7 @@ class SVBMC:
     M_min : int | float
         The minimum number (if `int` and > 1) or proportion (if `float` and <= 1) of VBMC runs to be used for S-VBMC. 
         If the number of well-converged runs is below this value, an error is produced. Defaults to 2/3. 
+        **NOTE**: a value of exactly 1 is going to be interpreted as a PROPOTION (100% of runs), not as a number of runs. 
     testing: bool
         Whether you are performing unit tests or not. If set to `True`, the sampling for `stacked_entropy()`
         will be deterministic. In practice this slows down the optimization and overfits noise, so it 
