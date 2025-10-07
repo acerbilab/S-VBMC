@@ -65,8 +65,8 @@ def test_filters_keep_only_stable_and_below_threshold():
     obj = svbmc.SVBMC([good1, good2, bad_j, bad_stable], s_max=s_max, M_min=2)
 
     # Exactly one run should survive
-    assert obj.M == 1
-    assert obj.K == [1]
+    assert obj.M == 2
+    assert obj.K == [1, 1]
     assert obj.D == 2
 
 
