@@ -64,7 +64,8 @@ class SVBMC:
         elif M_min <=1: # proportion of total runs if <= 1
             M_min = len(vp_list)*M_min
         elif M_min > len(vp_list): # number of runs if float > 1
-            raise ValueError(f"`M_min` should be lower than `len(vp_list)`, but got {M_min} and {len(vp_list)}, respectively.")
+            print(f"Warning: `M_min` should be lower than or equal to `len(vp_list)`, but got {M_min} and {len(vp_list)}, respectively. Setting `M_min` to {len(vp_list)}")
+            M_min = len(vp_list)
         elif np.round(M_min) != M_min: # number of runs if integer > 1
             print(f"Warning: if you want to specify the minimum number of runs to use, you should input `M_min` as an integer. Rounding to closest integer, {int(np.round(M_min))}")
             M_min = int(np.round(M_min))
