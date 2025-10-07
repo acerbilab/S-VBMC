@@ -21,17 +21,12 @@ Performing several VBMC inference runs with different initialization points [is 
 
 Create a new environment in `conda` and activate it:
    ```bash
-   conda create -n svbmc python=3.11
-   conda activate svbmc
+   conda create -n svbmc-env python=3.11
+   conda activate svbmc-env
    ```
-Install `svbmc`:
-   1. Clone the repo:
+Install `svbmc` with `pip`:
    ```bash
-   git clone https://github.com/acerbilab/svbmc.git
-   ```
-   2. Install from the cloned repository folder:
-   ```bash
-   pip install -e . 
+   pip install svbmc 
    ```
 
 ### 2. Running S-VBMC
