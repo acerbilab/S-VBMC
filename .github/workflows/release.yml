@@ -1,0 +1,42 @@
+# AI Summary: Automates PyPI publishing on version tags. Builds sdist/wheel,
+# validates metadata via twine, then uploads with pypa/gh-action-pypi-publish.
+# Requires PYPI_API_TOKEN GitHub secret. Trigger: push tags like v0.1.0.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip and install build tooling
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build twine
+
+      - name: Build sdist & wheel
+        run: python -m build --sdist --wheel --outdir dist/
+
+      - name: Verify package metadata
+        run: twine check dist/*
+
+      - name: Publish to PyPI
+        if: ${{ secrets.PYPI_API_TOKEN != '' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          # repository-url: https://upload.pypi.org/legacy/  # (default)
+          # To do a TestPyPI dry run, set repository-url and use TESTPYPI_API_TOKEN instead.

@@ -7,7 +7,7 @@ name = "svbmc"
 version = "0.1.0"
 description = "Stacking Variational Bayesian Monte Carlo"
 readme = "README.md"
-license = { file = "LICENSE" }
+license = { file = "LICENSE.txt" }
 requires-python = ">=3.11"
 
 dependencies = [
