@@ -157,4 +157,4 @@ S-VBMC is released under the terms of the [BSD 3-Clause License](LICENSE.txt).
 
 ## Acknowledgments
 
-S-VBMC was developed by [members](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/people) of the [Machine and Human Intelligence Lab](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/) at the University of Helsinki. 
+S-VBMC was developed by [members](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/people) of the [Machine and Human Intelligence Lab](https://www.helsinki.fi/en/researchgroups/machine-and-human-intelligence/) at the University of Helsinki. This work was supported by [Research Council of Finland](https://www.aka.fi/en/) (grants 358980 and 356498).
