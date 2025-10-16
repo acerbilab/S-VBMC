@@ -59,10 +59,15 @@ vp_stacked.optimize()
 print(f"Stacked ELBO: {vp_stacked.elbo['estimated']}")
 ```
 
-For a detailed walkthrough, see [this notebook](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_1_basic_usage.ipynb), which optionally includes a minimal guide on how to run VBMC multiple times. Additionally, [this notebook](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_2_noisy_likelihoods.ipynb) addresses scenarios where the target log-density evaluations are noisy.
-
 **Note**: For compatibility with VBMC, this implementation of S-VBMC stores results in `NumPy` arrays. However, it uses `PyTorch` under the hood to run the ELBO optimization.
 
+### 3. Tutorials
+
+We include two detailed walkthroughs:
+
+1. [**Basic Usage**](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_1_basic_usage.ipynb): This notebook shows how to run S-VBMC, with an optional guide on how to run VBMC multiple times.
+2. [**Noisy Log-Density Evaluations**](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_2_noisy_likelihoods.ipynb): This notebook addresses scenarios where the target log-density evaluations are noisy and a discussion of ELBO debiasing.
+   
 -----
 
 ## ⚠️ Important: how to use the final posterior
