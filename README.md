@@ -1,5 +1,7 @@
 # Stacking Variational Bayesian Monte Carlo (S-VBMC)
 
+> **tl;dr**: S-VBMC improves posterior inference via [VBMC](https://github.com/acerbilab/pyvbmc) by combining multiple independent runs into a **single optimized posterior**. It requires no additional model evaluations and no communication between runs: just run VBMC in parallel with different initializations, then stack the results at the end. Start [here](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_1_basic_usage.ipynb) for a quick usage demo.
+
 ## Overview
 Stacking Variational Bayesian Monte Carlo (S-VBMC)[[1](#references-and-citation)] is a fast post-processing step for [Variational Bayesian Monte Carlo (VBMC)](https://github.com/acerbilab/pyvbmc). VBMC is an approximate Bayesian inference technique that produces a variational posterior in the form of a Gaussian mixture (see the relevant papers [[2-4](#references-and-citation)] for more details). S-VBMC improves upon this by combining ("stacking") the Gaussian mixture components from several independent VBMC runs into a single, larger mixture, which we call "stacked posterior". It then re-optimizes the weights of this combined mixture to maximize the combined Evidence Lower BOund (ELBO, a lower bound on log [model evidence](https://en.wikipedia.org/wiki/Marginal_likelihood)). 
 
@@ -11,7 +13,7 @@ Refer to the S-VBMC paper for further details [[1](#references-and-citation)].
 
 S-VBMC works as a post-processing step for VBMC, so it shares its use cases (described [here](https://github.com/acerbilab/pyvbmc/tree/main?tab=readme-ov-file#when-should-i-use-pyvbmc)).
 
-Performing several VBMC inference runs with different initialization points [is already recommended by the developers](https://github.com/acerbilab/pyvbmc/blob/main/examples/pyvbmc_example_4_validation.ipynb) for robustness and convergence diagnostics; therefore, S-VBMC naturally fits into VBMC's best practices. Because S-VBMC is inexpensive and effective, we recommend using it whenever you first perform inference with VBMC. It is especially useful when separate VBMC runs yield noticeably different variational posteriors, which might happen when the target distribution has a particularly complex shape (see [this notebook](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_1_basic_usage.ipynb) for two examples of this).
+Performing several VBMC inference runs with different initialization points [is already recommended](https://github.com/acerbilab/pyvbmc/blob/main/examples/pyvbmc_example_4_validation.ipynb) for robustness and convergence diagnostics; therefore, S-VBMC naturally fits into VBMC's best practices. Because S-VBMC is inexpensive and effective, we recommend using it whenever you first perform inference with VBMC. It is especially useful when separate VBMC runs yield noticeably different variational posteriors, which might happen when the target distribution has a particularly complex shape (see [this notebook](https://github.com/acerbilab/S-VBMC/blob/main/examples/svbmc_example_1_basic_usage.ipynb) for two examples of this).
 
 -----
 
@@ -70,18 +72,20 @@ We include two detailed walkthroughs:
    
 -----
 
-## ⚠️ Important: how to use the final posterior
+## How to use the final posterior
 
-You must use samples from the stacked posterior for any application and should **not** interpret its individual components' sufficient statistics (means and covariance matrices).
-
-This is because each VBMC run may use different internal parameter transformations. Consequently, the component means and covariance matrices from different VBMC posteriors exist in **incompatible parameter spaces**. Combining them creates a mixture whose individual Gaussian components are not directly meaningful.
-
-**Always use samples from the final stacked posterior**, which are correctly transformed back into the original parameter space. These are available via the `.sample()` method:
+If you want to compute estimates (or visualize) the final stacked posterior, you can draw samples from it using `.sample()`:
 
 ```python
 # Draw 10,000 samples from the final, stacked posterior
 samples = vp_stacked.sample(n_samples=10000)
 ```
+
+You can also extract the ELBO estimates for model comparison (see [here](https://github.com/acerbilab/svbmc/blob/main/examples/svbmc_example_1_basic_usage.ipynb); and [here](https://github.com/acerbilab/svbmc/blob/main/examples/svbmc_example_2_noisy_likelihoods.ipynb) if your log-density evaluations are noisy).
+
+### For advanced users
+
+Do **not** "open the box" to get S-VBMC stacked posterior's individual components' means and covariance matrices. This is because each VBMC run may use different internal parameter transformations. Consequently, the component means and covariance matrices from different VBMC posteriors exist in **incompatible parameter spaces**. Combining them creates a mixture whose individual Gaussian components are not directly meaningful. **Always use samples from the final stacked posterior**, which are correctly transformed back into the original parameter space. These are available via the `.sample()` method.
 
 ## References and citation
 
